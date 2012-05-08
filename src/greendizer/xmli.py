@@ -113,13 +113,13 @@ class XMLiElement(object):
             value = datetime_to_string(value)
 
         if isinstance(value, Decimal):
-            value = "0" if not value else str(value)
+            value = "0" if not value else unicode(value)
 
         tag = root.ownerDocument.createElement(name)
         if cdata:
-            tag.appendChild(root.ownerDocument.createCDATASection(str(value)))
+            tag.appendChild(root.ownerDocument.createCDATASection(unicode(value)))
         else:
-            tag.appendChild(root.ownerDocument.createTextNode(str(value)))
+            tag.appendChild(root.ownerDocument.createTextNode(unicode(value)))
 
         return root.appendChild(tag)
 
@@ -208,7 +208,7 @@ class ExtensibleXMLiElement(XMLiElement):
         @param tag:str Tag name.
         '''
         tag = root.ownerDocument.createElementNS(uri, name)
-        tag.appendChild(root.ownerDocument.createCDATASection(str(value)))
+        tag.appendChild(root.ownerDocument.createCDATASection(unicode(value)))
         return root.appendChild(tag)
 
 
@@ -1014,7 +1014,7 @@ class Treatment(XMLiElement):
         @param value:float
         '''
         try:
-            self.__rate = Decimal(str(value))
+            self.__rate = Decimal(unicode(value))
         except:
             raise ValueError("invalid rate value.")
 
