@@ -220,7 +220,7 @@ class EmailBase(Resource):
         @param identifier:str ID of the email resource.
         '''
         if "@" in identifier:
-            identifier = hashlib.sha1(identifier).hexdigest()
+            identifier = hashlib.sha1(identifier.lower()).hexdigest()
 
         super(EmailBase, self).__init__(user.client, identifier)
         self.__user = user
