@@ -15,6 +15,13 @@ MAX_CONTENT_LENGTH = 512000 #500kb
 
 
 
+class ResourceNotFoundException(Exception):
+    '''
+    Represents the exception raised if a resource could not be found.
+    '''
+    pass
+
+
 
 class Seller(User):
     '''
@@ -137,6 +144,23 @@ class InvoiceNode(InvoiceNodeBase):
         @return: Collection
         '''
         return self.search(query="location==0")
+
+
+    def get_by_custom_id(self, custom_id):
+        '''
+        Gets an invoice using its custom_id
+        @param custom_id:str Custom ID of the invoice to retrieve
+        '''
+        if not custom_id:
+            raise ValueError("Invalid custom_id parameter")
+
+        collection = self.search(query="customId==" + custom_id)
+        collection.populate(offset=0, limit=1)
+        if not len(collection) :
+            raise ResourceNotFoundException("Could not find invoice with " \
+                                            "custom_id " + custom_id)
+
+        return collection[0]
 
 
     def send(self, xmli, signature=True):
