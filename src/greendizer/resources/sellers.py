@@ -1,7 +1,8 @@
 import binascii
 import struct
 from datetime import timedelta
-from greendizer.base import Address, is_empty_or_none, extract_id_from_uri
+from greendizer.base import (Address, is_empty_or_none, extract_id_from_uri,
+                             to_byte_string)
 from greendizer.http import Request
 from greendizer.dal import Resource, Node
 from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
@@ -169,7 +170,7 @@ class InvoiceNode(InvoiceNodeBase):
         @param xmli:str Invoice XML representation.
         @return: InvoiceReport
         '''
-        xmli = unicode(xmli)
+        xmli = to_byte_string(xmli)
         if is_empty_or_none(xmli):
             raise ValueError("Invalid XMLi")
 

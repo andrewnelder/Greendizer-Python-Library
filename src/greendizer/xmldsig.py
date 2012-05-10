@@ -10,7 +10,7 @@ xml digital signatures
 try:
     import lxml.etree as etree
 except ImportError:
-    raise ImportError("lxml is required but could not be find.")
+    raise ImportError("lxml is required but could not be found.")
 
 import hashlib
 import binascii
