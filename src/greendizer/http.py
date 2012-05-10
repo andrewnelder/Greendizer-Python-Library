@@ -8,7 +8,7 @@ from gzip import GzipFile
 from StringIO import StringIO
 import greendizer
 from greendizer.base import (is_empty_or_none, timestamp_to_datetime,
-                             datetime_to_timestamp)
+                             datetime_to_timestamp, to_byte_string)
 
 
 
@@ -177,32 +177,32 @@ class Request(object):
 
         encoded_data = None
         if method in ["POST", "PATCH", "PUT"] and self.data:
+            data = to_byte_string(self.data)
             headers["Content-Type"] = self.__content_type + "; charset=utf-8"
             if self.__content_type == "application/x-www-form-urlencoded":
-                encoded_data = unicode(urllib.urlencode(self.data))
+                encoded_data = urllib.urlencode(data)
             else:
                 if not greendizer.DEBUG and USE_GZIP:
                     #Compress to GZip
                     headers["Content-Encoding"] = COMPRESSION_GZIP
                     bf = StringIO('')
                     f = GzipFile(fileobj=bf, mode='wb', compresslevel=9)
-                    f.write(self.data.encode("utf-8"))
+                    f.write(data)
                     f.close()
                     encoded_data = bf.getvalue()
                 else:
-                    encoded_data = self.data.encode("utf-8")
+                    encoded_data = data
 
         request = Request.HttpRequest(API_ROOT + self.uri, data=encoded_data,
                                       method=method, headers=headers)
 
         try:
             response = urllib2.urlopen(request)
-            return Response(self, 200, response.read().decode("utf-8"),
+            return Response(self, 200, response.read(),
                             response.info())
 
         except(urllib2.HTTPError), e:
-            instance = Response(self, e.code, e.read().decode("utf-8"),
-                                e.info())
+            instance = Response(self, e.code, e.read(), e.info())
             if e.code not in [201, 202, 204, 206, 304, 409, 416]:
                 raise ApiException(instance)
 

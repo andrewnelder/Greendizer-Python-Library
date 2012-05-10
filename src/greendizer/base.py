@@ -12,6 +12,28 @@ EMAIL_PATTERN = re.compile('^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]' \
 
 
 
+def to_unicode(text):
+    '''
+    Converts an input text to a unicode object.
+    @param text:object Input text
+    @returns:unicode
+    '''
+    return text.decode("UTF-8") if type(text) == str else unicode(text)
+
+
+
+
+def to_byte_string(text):
+    '''
+    Converts an input text to a unicode object.
+    @param text:object Input text
+    @returns:unicode
+    '''
+    return text.encode("UTF-8") if type(text) == unicode else str(text)
+
+
+
+
 def is_valid_email(s):
     '''
     Returns a value indicating whether the submitted string is a valid

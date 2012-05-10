@@ -3,7 +3,8 @@ from xml.dom.minidom import Document
 from StringIO import StringIO
 from datetime import datetime, date
 from decimal import Decimal, ROUND_DOWN
-from greendizer.base import is_empty_or_none, is_valid_email
+from greendizer.base import (is_empty_or_none, is_valid_email, to_unicode,
+                             to_byte_string)
 
 
 
@@ -113,13 +114,14 @@ class XMLiElement(object):
             value = datetime_to_string(value)
 
         if isinstance(value, Decimal):
-            value = "0" if not value else unicode(value)
+            value = "0" if not value else str(value)
 
         tag = root.ownerDocument.createElement(name)
+        value = to_byte_string(value)
         if cdata:
-            tag.appendChild(root.ownerDocument.createCDATASection(unicode(value)))
+            tag.appendChild(root.ownerDocument.createCDATASection(value))
         else:
-            tag.appendChild(root.ownerDocument.createTextNode(unicode(value)))
+            tag.appendChild(root.ownerDocument.createTextNode(value))
 
         return root.appendChild(tag)
 
@@ -157,7 +159,7 @@ class XMLiElement(object):
         Returns a unicode string representation of the XMLi element.
         @return: unicode
         '''
-        return self.to_string().encode("utf-8")
+        return to_unicode(self.to_string())
 
 
 
@@ -207,8 +209,10 @@ class ExtensibleXMLiElement(XMLiElement):
         @param uri:str Namespace URI
         @param tag:str Tag name.
         '''
-        tag = root.ownerDocument.createElementNS(uri, name)
-        tag.appendChild(root.ownerDocument.createCDATASection(unicode(value)))
+        tag = root.ownerDocument.createElementNS(to_byte_string(uri),
+                                                 to_byte_string(name))
+        tag.appendChild(root.ownerDocument
+                        .createCDATASection(to_byte_string(value)))
         return root.appendChild(tag)
 
 
@@ -279,7 +283,7 @@ class Interval(object):
         Returns a unicode string representation of the interval
         @return: unicode
         '''
-        return self.to_string().encode("utf-8")
+        return to_unicode(self.to_string())
 
 
 
@@ -480,7 +484,7 @@ class XMLiBuilder(object):
         Returns a string representation of the XMLi element.
         @return: str
         '''
-        buf = StringIO(u'')
+        buf = StringIO('')
         self.to_xml().writexml(buf, indent=indent, addindent=addindent,
                                newl=newl, encoding="UTF-8")
         serialized = buf.getvalue()
@@ -501,7 +505,7 @@ class XMLiBuilder(object):
         Returns a unicode string representation of the XMLi.
         @return: unicode
         '''
-        return self.to_string().encode("utf-8")
+        return to_unicode(self.to_string())
 
 
 
@@ -1014,7 +1018,7 @@ class Treatment(XMLiElement):
         @param value:float
         '''
         try:
-            self.__rate = Decimal(unicode(value))
+            self.__rate = Decimal(str(value))
         except:
             raise ValueError("invalid rate value.")
 
@@ -1066,10 +1070,10 @@ class Treatment(XMLiElement):
         doc = Document()
         root = doc.createElement(name)
         root.setAttribute("type", self.rate_type)
-        root.setAttribute("name", self.name)
-        root.setAttribute("description", self.description)
+        root.setAttribute("name", to_byte_string(self.name))
+        root.setAttribute("description", to_byte_string(self.description))
         root.setAttribute("base", self.interval) if self.interval else ""
-        root.appendChild(doc.createTextNode(str(self.rate)))
+        root.appendChild(doc.createTextNode(to_byte_string(self.rate)))
         return root
 
 
