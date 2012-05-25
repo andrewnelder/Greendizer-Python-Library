@@ -7,6 +7,7 @@ from greendizer.resources.sellers import Seller
 
 
 DEBUG = False
+VERSION = "1.2.0"
 
 
 

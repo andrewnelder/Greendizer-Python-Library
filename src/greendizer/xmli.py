@@ -3,6 +3,7 @@ from xml.dom.minidom import Document
 from StringIO import StringIO
 from datetime import datetime, date
 from decimal import Decimal, ROUND_DOWN
+from greendizer import VERSION
 from greendizer.base import (is_empty_or_none, is_valid_email, to_unicode,
                              to_byte_string)
 
@@ -16,7 +17,7 @@ ZERO = Decimal(0)
 SIGNIFICANCE_EXPONENT = Decimal(10) ** -5 #0.00001
 MAX_LENGTH = 100
 VERSION = "gd-xmli-1.1"
-AGENT = "Greendizer Pyzer Lib 1.0"
+AGENT = "Greendizer Pyzer Lib %s" % VERSION
 CURRENCIES = ['AED', 'ALL', 'ANG', 'ARS', 'AUD', 'AWG', 'BBD', 'BDT', 'BGN',
               'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BRL', 'BTN', 'BWP', 'BYR',
               'BZD', 'CAD', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'CUP', 'CVE',
