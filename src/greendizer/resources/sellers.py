@@ -1,5 +1,3 @@
-import binascii
-import struct
 from datetime import timedelta
 from greendizer.base import (Address, is_empty_or_none, extract_id_from_uri,
                              to_byte_string)
@@ -170,31 +168,42 @@ class InvoiceNode(InvoiceNodeBase):
         @param xmli:str Invoice XML representation.
         @return: InvoiceReport
         '''
-        xmli = to_byte_string(xmli)
-        if is_empty_or_none(xmli):
-            raise ValueError("Invalid XMLi")
+        data = ''
 
         '''
-        XMLdsig: required PyCrypto + lxml
+        XMLdsig: requires PyCrypto + lxml
         '''
         private_key, public_key = self.email.client.keys
         if signature and private_key and public_key:
+            from greendizer.xmli import XMLiBuilder
             from greendizer import xmldsig
-            xmli = xmldsig.sign(xmli, private_key, public_key)
+
+            #Divide the elements into signable chunks.
+            for invoice in xmli.invoices:
+                builder = XMLiBuilder()
+                builder.invoices.append(invoice)
+                data += xmldsig.sign(to_byte_string(builder.to_xml()),
+                                       private_key,
+                                       public_key)
+        else:
+            data = to_byte_string(xmli)
+
+        if is_empty_or_none(data):
+            raise ValueError("Invalid XMLi")
 
         size = 0
         try:
             from os import sys
-            size = sys.getsizeof(xmli)
+            size = sys.getsizeof(data)
         except AttributeError:
             import base64 #2.5 and older...
-            size = len(base64.encodestring(xmli)) #1 ASCII = 1 byte
+            size = len(base64.encodestring(data)) #1 ASCII = 1 byte
 
         if size > MAX_CONTENT_LENGTH:
             raise ValueError("XMLi's size is limited to %skb."
                              % MAX_CONTENT_LENGTH / 1024)
 
-        request = Request(self.email.client, method="POST", data=xmli,
+        request = Request(self.email.client, method="POST", data=data,
                           uri=self._uri, content_type="application/xml")
 
         response = request.get_response()

@@ -442,10 +442,12 @@ class XMLiBuilder(object):
     '''
     Encapsulates methods and tools to generate a valid XMLi.
     '''
-    def __init__(self):
+    def __init__(self, seller_client):
         '''
         Initializes a new instance of the XMLiBuilder class.
+        @param seller_client:greendizer.SellerClient A seller client instance.
         '''
+        self.__seller_client = seller_client
         self.__invoices = []
 
 
@@ -458,13 +460,16 @@ class XMLiBuilder(object):
         return self.__invoices
 
 
-    def to_xml(self):
+    def to_xml(self, signed=False):
         '''
         Returns a DOM Document representing the invoice
         @return: Document
         '''
-        if len(self.__invoices) > MAX_LENGTH:
-            raise Exception("Limited to %d invoices at a time." % MAX_LENGTH)
+        #Signed invoices can't be grouped inside one 'xmli' tag.
+        max_length = 1 if signed else MAX_LENGTH
+
+        if len(self.__invoices) > max_length:
+            raise Exception("Limited to %d invoices at a time." % max_length)
 
         doc = Document()
         root = doc.createElement("xmli")
@@ -520,7 +525,7 @@ class Invoice(ExtensibleXMLiElement):
 
     def __init__(self, name=None, description=None, currency=None,
                  status=INVOICE_PAID, date=date.today(), due_date=None,
-                 custom_id=None, terms=None, buyer=Contact(),
+                 custom_id=None, terms=None, seller=Contact(), buyer=Contact(),
                  shipping=Shipping()):
         '''
         Initializes a new instance of the Invoice class.
@@ -533,6 +538,7 @@ class Invoice(ExtensibleXMLiElement):
         '''
         super(Invoice, self).__init__()
 
+        self.seller = seller
         self.buyer = buyer
         self.shipping = shipping
         self.name = name
@@ -657,13 +663,15 @@ class Invoice(ExtensibleXMLiElement):
             raise Exception("An invoice must at least have one group.")
 
         for n, v in { "name": self.name, "currency": self.currency,
-                    "buyer":self.buyer, "status": self.status,
-                    "date": self.date, "due_date": self.due_date}.items():
+                     "seller": self.seller, "buyer":self.buyer,
+                     "status": self.status, "date": self.date,
+                     "due_date": self.due_date}.items():
             if is_empty_or_none(v):
                 raise ValueError("'%s' attribute cannot be empty or None." % n)
 
         doc = Document()
         root = doc.createElement("invoice")
+        root.appendChild(self.seller.to_xml("seller"))
         root.appendChild(self.buyer.to_xml("buyer"))
 
         if self.shipping:
