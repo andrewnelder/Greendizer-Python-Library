@@ -245,6 +245,15 @@ class EmailBase(Resource):
         return self._get_attribute("label")
 
 
+    @property
+    def user(self):
+        '''
+        Gets the user to which this email address is attached.
+        @return: User
+        '''
+        return self.__user
+
+
 
 
 class InvoiceBase(Resource):

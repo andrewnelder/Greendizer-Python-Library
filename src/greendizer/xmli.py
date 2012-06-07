@@ -16,7 +16,7 @@ INFINITY = Decimal('inf')
 ZERO = Decimal(0)
 SIGNIFICANCE_EXPONENT = Decimal(10) ** -5 #0.00001
 MAX_LENGTH = 100
-VERSION = "gd-xmli-1.1"
+VERSION = "2.0"
 AGENT = "Greendizer Pyzer Lib %s" % VERSION
 CURRENCIES = ['AED', 'ALL', 'ANG', 'ARS', 'AUD', 'AWG', 'BBD', 'BDT', 'BGN',
               'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BRL', 'BTN', 'BWP', 'BYR',
@@ -38,6 +38,7 @@ CURRENCIES = ['AED', 'ALL', 'ANG', 'ARS', 'AUD', 'AWG', 'BBD', 'BDT', 'BGN',
 INVOICE_DUE = "due"
 INVOICE_PAID = "paid"
 INVOICE_CANCELED = "canceled"
+INVOICE_IRRECOVERABLE = "irrecoverable"
 UNITS = ['BO', 'CL', 'CMK', 'CMQ', 'CM', 'CT', 'DL', 'DM', 'E4', 'CQ', 'GAL',
          'GRM', 'TB', 'HUR', 'KGM', 'KM', 'LTR', 'MGM', 'MLT', 'MMT', 'MTK',
          'MTR', 'NT', 'PK', 'RO', 'TNE', 'ZZ']

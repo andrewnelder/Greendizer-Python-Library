@@ -6,6 +6,7 @@ from greendizer.dal import Resource, Node
 from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
                                   MessageBase, HistoryBase, InvoiceNodeBase,
                                   ThreadNodeBase, MessageNodeBase)
+from greendizer.xmli import XMLiBuilder
 
 
 
@@ -162,34 +163,47 @@ class InvoiceNode(InvoiceNodeBase):
         return collection[0]
 
 
-    def send(self, xmli, signature=True):
+    def __builder_to_str(self, builder, signature=True):
         '''
-        Sends an invoice
-        @param xmli:str Invoice XML representation.
-        @return: InvoiceReport
+        Turns an XMLiBuilder instance into a string, adding a digital signature
+        if required.
+        @param builder:XMLiBuilder instance
+        @param signature:bool A value indicating whether to digitally sign the
+        invoices or not.
+        @return: str
         '''
-        data = ''
+        if not issubclass(builder, XMLiBuilder):
+            raise ValueError('Expecting an XMLiBuilder instance.')
 
-        '''
-        XMLdsig: requires PyCrypto + lxml
-        '''
+        #XMLdsig: requires PyCrypto + lxml
         private_key, public_key = self.email.client.keys
         if signature and private_key and public_key:
-            from greendizer.xmli import XMLiBuilder
             from greendizer import xmldsig
 
-            #Divide the elements into signable chunks.
-            for invoice in xmli.invoices:
-                builder = XMLiBuilder()
-                builder.invoices.append(invoice)
-                data += xmldsig.sign(to_byte_string(builder.to_xml()),
-                                       private_key,
-                                       public_key)
-        else:
-            data = to_byte_string(xmli)
+            #Divide the elements into XMLDSig chunks.
+            chunks = []
+            for invoice in builder.invoices:
+                new_builder = XMLiBuilder(self.email.user.client)
+                new_builder.invoices.append(invoice)
+                chunks.append(xmldsig.sign(to_byte_string(new_builder.to_xml()),
+                                           private_key,
+                                           public_key))
 
-        if is_empty_or_none(data):
-            raise ValueError("Invalid XMLi")
+            return ''.join(chunks)
+
+        return to_byte_string(builder)
+
+
+    def validate_xmli_builder(self, builder, signature=True):
+        '''
+        Verifies an XMLiBuilder instance or an XMLi string,
+        and raises an exception if its content is believed to be invalid.
+        @raise ValueError: Raised in case the XMLi size is beyond the limit.
+        @return: bool 
+        '''
+        data = (self.__builder_to_str(builder, signature) if
+                issubclass(builder, XMLiBuilder) else
+                to_byte_string(builder))
 
         size = 0
         try:
@@ -202,6 +216,18 @@ class InvoiceNode(InvoiceNodeBase):
         if size > MAX_CONTENT_LENGTH:
             raise ValueError("XMLi's size is limited to %skb."
                              % MAX_CONTENT_LENGTH / 1024)
+
+        return True
+
+
+    def send(self, builder, signature=True):
+        '''
+        Sends an invoice
+        @param xmli:str Invoice XML representation.
+        @return: InvoiceReport
+        '''
+        data = self.__builder_to_str(builder, signature)
+        self.validate_xmli_builder(data)
 
         request = Request(self.email.client, method="POST", data=data,
                           uri=self._uri, content_type="application/xml")
