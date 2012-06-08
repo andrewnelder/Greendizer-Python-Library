@@ -259,6 +259,26 @@ class Seller(HistoryBase):
         '''
         self.__email = email
         super(Seller, self).__init__(email.client, identifier)
+        self.__days = Node(self.client, self.uri + 'days/', HistoryBase)
+        self.__hours = Node(self.client, self.uri + 'hours/', HistoryBase)
+
+
+    @property
+    def days(self):
+        '''
+        Gets access to daily digests of analytics.
+        @return: Node
+        '''
+        return self.__days
+
+
+    @property
+    def hours(self):
+        '''
+        Gets access to hourly digests of analytics.
+        @return: Node
+        '''
+        return self.__hours
 
 
     @property
