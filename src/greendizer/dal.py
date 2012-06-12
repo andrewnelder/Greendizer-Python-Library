@@ -516,7 +516,7 @@ class Node(object):
         if not self._resource_cls:
             raise NotImplementedError()
 
-        params = [ (k, v) for k, v in kwargs.items()
+        params = [(k, v) for k, v in kwargs.items()
                   if k not in ['default', 'check_existence']]
         instance = self._resource_cls(*args, **dict(params))
 

@@ -1,13 +1,15 @@
 import binascii
 import struct
 from datetime import timedelta
-from greendizer.base import (Address, is_empty_or_none, extract_id_from_uri,
+from greendizer.helpers import Address
+from greendizer.base import (is_empty_or_none, extract_id_from_uri,
                              to_byte_string)
 from greendizer.http import Request
 from greendizer.dal import Resource, Node
 from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
-                                  MessageBase, HistoryBase, InvoiceNodeBase,
-                                  ThreadNodeBase, MessageNodeBase)
+                                  MessageBase, InvoiceNodeBase, AnalyticsBase,
+                                  ThreadNodeBase, MessageNodeBase, DailyDigest,
+                                  HourlyDigest, TimespanDigestNode)
 
 
 
@@ -530,7 +532,9 @@ class BuyerNode(Node):
         @param seller:Seller Currently authenticated seller.
         '''
         self.__seller = seller
-        super(BuyerNode, self).__init__(seller, seller.uri + "buyers/", Buyer)
+        super(BuyerNode, self).__init__(seller.client,
+                                        seller.uri + "buyers/",
+                                        Buyer)
 
 
     def get(self, identifier, default=None, **kwargs):
@@ -545,7 +549,7 @@ class BuyerNode(Node):
 
 
 
-class Buyer(HistoryBase):
+class Buyer(AnalyticsBase):
     '''
     Represents a customer of the seller.
     '''
@@ -558,8 +562,8 @@ class Buyer(HistoryBase):
         self.__delivery_address = None
         super(Buyer, self).__init__(seller.client, identifier)
 
-        self.__days = Node(self.client, self.uri + 'days/', HistoryBase)
-        self.__hours = Node(self.client, self.uri + 'hours/', HistoryBase)
+        self.__days = TimespanDigestNode(self, 'days/', DailyDigest)
+        self.__hours = TimespanDigestNode(self, 'hours/', HourlyDigest)
 
 
     @property
@@ -590,7 +594,7 @@ class Buyer(HistoryBase):
 
 
     @property
-    def address(self):
+    def billing_address(self):
         '''
         Gets the address of the buyer.
         @return: Address
