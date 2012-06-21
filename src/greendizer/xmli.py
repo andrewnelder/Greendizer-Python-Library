@@ -4,8 +4,7 @@ from StringIO import StringIO
 from datetime import datetime, date
 from decimal import Decimal, ROUND_DOWN
 from greendizer import VERSION
-from greendizer.base import (is_empty_or_none, is_valid_email, to_unicode,
-                             to_byte_string)
+from greendizer.base import is_valid_email, to_unicode, to_byte_string
 
 
 
@@ -67,6 +66,23 @@ COUNTRIES = ["AF", "AX", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR",
              "TT", "TN", "TR", "TM", "TC", "TV", "UG", "UA", "AE", "GB", "US",
              "UM", "UY", "UZ", "VU", "VA", "VE", "VN", "VG", "VI", "WF", "YE",
              "ZM", "ZW"]
+
+
+
+
+def is_empty_or_none(s):
+    '''
+    Returns a value indicating whether the string is empty or none
+    @param s:str String to check.
+    @return: bool
+    '''
+    if s is None:
+        return True
+
+    try:
+        return len(s) == 0
+    except:
+        return False
 
 
 

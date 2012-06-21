@@ -1,6 +1,6 @@
 import hashlib
 from datetime import date
-from greendizer.base import is_empty_or_none, extract_id_from_uri
+from greendizer.base import extract_id_from_uri
 from greendizer.dal import Resource, Node
 from greendizer.http import Request
 
@@ -676,13 +676,13 @@ class ThreadNodeBase(Node):
         @param subject:str Subject of the thread
         @param message:str Message
         '''
-        if is_empty_or_none(recipient_id):
+        if not recipient_id:
             raise ValueError("Invalid recipient ID")
 
-        if is_empty_or_none(subject):
+        if not subject:
             raise ValueError("Invalid subject")
 
-        if is_empty_or_none(message):
+        if not message:
             raise ValueError("Invalid message")
 
         data = {"recipient":recipient_id, "subject":subject, "message":message}

@@ -1,8 +1,7 @@
 import urllib
 from datetime import datetime, date
 from greendizer.http import Request, Etag, Range, ApiException
-from greendizer.base import (is_empty_or_none, timestamp_to_datetime,
-                             datetime_to_timestamp)
+from greendizer.base import timestamp_to_datetime, datetime_to_timestamp
 
 
 
@@ -277,7 +276,7 @@ class Resource(object):
         if self.__deleted:
             raise ResourceDeletedException()
 
-        if len(self.__raw_updates) == 0:
+        if not len(self.__raw_updates):
             return
 
         request = Request(self.__client, method="PATCH",
@@ -432,7 +431,7 @@ class Collection(object):
         '''
         uri = self.__uri
 
-        if not is_empty_or_none(fields):
+        if fields and len(fields):
             fields = "fields=" + urllib.quote_plus(fields)
             uri = uri + ("?" if not self.__query else "&") + fields
 

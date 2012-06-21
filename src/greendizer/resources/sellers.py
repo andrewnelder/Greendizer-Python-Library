@@ -1,5 +1,5 @@
 from datetime import timedelta
-from greendizer.base import (Address, is_empty_or_none, extract_id_from_uri,
+from greendizer.base import (Address, extract_id_from_uri,
                              to_byte_string)
 from greendizer.http import Request
 from greendizer.dal import Resource, Node
