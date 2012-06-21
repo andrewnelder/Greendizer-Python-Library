@@ -181,7 +181,8 @@ class Request(object):
         headers = self.__serialize_headers()
         headers.update({
             "Accept": "application/json",
-            "User-Agent": "Greendizer Pyzer Library/1.0",
+            "User-Agent": "Greendizer Python Library/%s" % (greendizer.VERSION,
+                                                            ),
             "Accept-Encoding": "gzip, deflate",
             "Cache-Control": "no-cache"
         })
