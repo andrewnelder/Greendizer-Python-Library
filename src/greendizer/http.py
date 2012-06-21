@@ -3,12 +3,13 @@ import urllib, urllib2
 import simplejson
 import re
 import zlib
+import urlparse
 from datetime import datetime, date
 from gzip import GzipFile
 from StringIO import StringIO
 import greendizer
-from greendizer.base import (is_empty_or_none, timestamp_to_datetime,
-                             datetime_to_timestamp, to_byte_string)
+from greendizer.base import (timestamp_to_datetime, datetime_to_timestamp,
+                             to_byte_string)
 
 
 
@@ -17,8 +18,10 @@ COMPRESSION_DEFLATE = "deflate"
 COMPRESSION_GZIP = "gzip"
 API_ROOT = "https://api.greendizer.com/"
 USE_GZIP = True
-HTTP_METHODS = ["head", "get", "post", "put", "patch", "delete", "options"]
+HTTP_METHODS_WITH_DATA = ['post', 'put', 'patch']
+HTTP_METHODS = ["head", "get", "delete", "options"] + HTTP_METHODS_WITH_DATA
 CONTENT_TYPES = ["application/xml", "application/x-www-form-urlencoded"]
+HTTP_POST_ONLY = False
 
 
 
@@ -80,7 +83,7 @@ class Request(object):
             Gets the HTTP method in use.
             @return: str
             '''
-            return self.__method
+            return self.__method.upper()
 
 
     def __init__(self, client=None, method="GET", uri=None, data=None,
@@ -90,24 +93,19 @@ class Request(object):
         @param method:str HTTP method
         @param content_type:str MIME type of the data to carry to the server.
         '''
-        if is_empty_or_none(uri):
+        if not uri:
             raise ValueError("Invalid URI.")
 
-        if (is_empty_or_none(method)
-            or method.lower() not in HTTP_METHODS):
+        if method.lower() not in HTTP_METHODS:
             raise ValueError("Invalid HTTP method.")
 
-        if (is_empty_or_none(content_type)
-            or content_type not in CONTENT_TYPES):
+        if content_type not in CONTENT_TYPES:
             raise ValueError("Invalid content type value.")
-
-        if not data and method.lower() in ["post", "put", "patch"]:
-            raise ValueError("Data is not expected to be None.")
 
         self.__content_type = content_type
         self.data = data
-        self.uri = uri
-        self.method = method
+        self.uri = urlparse.urlsplit(API_ROOT + uri)
+        self.method = method.lower()
         self.headers = {}
         if client:
             client.sign_request(self)
@@ -147,14 +145,28 @@ class Request(object):
         '''
         serialized = {}
         for header, value in self.headers.items():
-            if isinstance(value, datetime) or isinstance(value, date):
+            if type(value) in [datetime, date]:
                 serialized[header] = value.isoformat()
             elif getattr(value, '__iter__', False): #is iterable
-                serialized[header] = ';'.join([str(i) for i in value])
+                serialized[header] = ';'.join([self.__serialize_headers(i)
+                                               for i in value])
             else:
                 serialized[header] = str(value)
 
         return serialized
+
+
+    def __gzip_content(self, data):
+        '''
+        Gzips a string to the highest compression level.
+        @param data:str
+        @return data:str
+        '''
+        bf = StringIO('')
+        f = GzipFile(fileobj=bf, mode='wb', compresslevel=9)
+        f.write(data)
+        f.close()
+        return bf.getvalue()
 
 
     def get_response(self):
@@ -162,6 +174,10 @@ class Request(object):
         Sends the request and returns an HTTP response object.
         @return: Response
         '''
+        if self.method in HTTP_METHODS_WITH_DATA and not self.data:
+            raise Exception("%s requests must carry data." %
+                            self.method.upper())
+
         headers = self.__serialize_headers()
         headers.update({
             "Accept": "application/json",
@@ -170,30 +186,29 @@ class Request(object):
             "Cache-Control": "no-cache"
         })
 
-        method = self.method
-        if self.method == "PATCH":
+        #X-HTTP-Method-Override support
+        method = self.method.lower()
+        if ((HTTP_POST_ONLY and self.method in HTTP_METHODS_WITH_DATA) or
+            self.method == "patch"):
             headers["X-HTTP-Method-Override"] = self.method
-            method = "POST"
+            method = "post"
 
-        encoded_data = None
-        if method in ["POST", "PATCH", "PUT"] and self.data:
-            data = to_byte_string(self.data)
+        #Data encoding and compression for POST, PUT and PATCH requests
+        encoded_data = to_byte_string(self.data or '')
+        if method in HTTP_METHODS_WITH_DATA:
             headers["Content-Type"] = self.__content_type + "; charset=utf-8"
-            if self.__content_type == "application/x-www-form-urlencoded":
-                encoded_data = urllib.urlencode(data)
-            else:
-                if not greendizer.DEBUG and USE_GZIP:
-                    #Compress to GZip
-                    headers["Content-Encoding"] = COMPRESSION_GZIP
-                    bf = StringIO('')
-                    f = GzipFile(fileobj=bf, mode='wb', compresslevel=9)
-                    f.write(data)
-                    f.close()
-                    encoded_data = bf.getvalue()
-                else:
-                    encoded_data = data
 
-        request = Request.HttpRequest(API_ROOT + self.uri, data=encoded_data,
+            #URL encoding
+            if self.__content_type == "application/x-www-form-urlencoded":
+                encoded_data = urllib.urlencode(encoded_data)
+
+            #GZip compression
+            if not greendizer.DEBUG and USE_GZIP:
+                headers["Content-Encoding"] = COMPRESSION_GZIP
+                encoded_data = self.__gzip_content(encoded_data)
+
+
+        request = Request.HttpRequest(self.uri.geturl(), data=encoded_data,
                                       method=method, headers=headers)
 
         try:
@@ -265,7 +280,7 @@ class Response(object):
                 '''
                 WARNING:
                 The HTTP protocol requires dates to be UTC.
-                The parsing of ISO8601 is made assuming there are no
+                The parsing of ISO8601 is made assuming there's no
                 time zone info in the string.
                 '''
                 #ISO8601
@@ -469,7 +484,7 @@ class ContentRange(object):
         @param raw:str String to parse
         @return: ContentRange
         '''
-        if is_empty_or_none(raw):
+        if not raw:
             return
 
         match = re.match(cls.REG_EXP, raw)
