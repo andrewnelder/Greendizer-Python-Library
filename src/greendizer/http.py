@@ -190,25 +190,26 @@ class Request(object):
         method = self.method.lower()
         if ((HTTP_POST_ONLY and self.method in HTTP_METHODS_WITH_DATA) or
             self.method == "patch"):
-            headers["X-HTTP-Method-Override"] = self.method
+            headers["X-HTTP-Method-Override"] = self.method.upper()
             method = "post"
 
         #Data encoding and compression for POST, PUT and PATCH requests
-        encoded_data = to_byte_string(self.data or '')
+        data = self.data
         if method in HTTP_METHODS_WITH_DATA:
             headers["Content-Type"] = self.__content_type + "; charset=utf-8"
 
             #URL encoding
             if self.__content_type == "application/x-www-form-urlencoded":
-                encoded_data = urllib.urlencode(encoded_data)
+                data = to_byte_string(urllib.urlencode(data))
+
 
             #GZip compression
             if not greendizer.DEBUG and USE_GZIP:
                 headers["Content-Encoding"] = COMPRESSION_GZIP
-                encoded_data = self.__gzip_content(encoded_data)
+                data = self.__gzip_content(to_byte_string(data))
 
-
-        request = Request.HttpRequest(self.uri.geturl(), data=encoded_data,
+        request = Request.HttpRequest(self.uri.geturl(),
+                                      data=data,
                                       method=method, headers=headers)
 
         try:

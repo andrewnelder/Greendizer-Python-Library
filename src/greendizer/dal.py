@@ -276,7 +276,7 @@ class Resource(object):
         if self.__deleted:
             raise ResourceDeletedException()
 
-        if len(self.__raw_updates) == 0:
+        if not len(self.__raw_updates):
             return
 
         request = Request(self.__client, method="PATCH",
