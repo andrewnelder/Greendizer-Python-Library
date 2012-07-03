@@ -5,7 +5,7 @@ XMLDSig: Sign and Verify XML digital cryptographic signatures.
 xmldsig is a minimal implementation of bytestring cryptographic
 xml digital signatures
 
-@note: Adapted from Andrew D. Yates' implementation of xmldsig for python 
+@note: Adapted from Andrew D. Yates' implementation of xmldsig for python
 '''
 try:
     import lxml.etree as etree
@@ -56,7 +56,7 @@ def sign(xml, private, public):
     Return xmldsig XML string from xml_string of XML.
     @param xml: str of bytestring xml to sign
     @param private: publicKey Private key
-    @param public: publicKey Public key 
+    @param public: publicKey Public key
     @return str: signed XML byte string
     '''
     xml = xml.encode('utf-8', 'xmlcharrefreplace')
@@ -93,5 +93,4 @@ def _generate_signed_info(xml):
     @return: str of <SignedInfo> computed from `xml`
     '''
     return PTN_SIGNED_INFO_XML % {'digest_value': b64e(hashlib.sha1(c14n(xml))
-                                                       .digest()) }
-
+                                                       .digest())}

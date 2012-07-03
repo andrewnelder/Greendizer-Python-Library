@@ -1,29 +1,23 @@
+# -*- coding: utf-8 -*-
 import urllib
 from datetime import datetime, date
 from greendizer.http import Request, Etag, Range, ApiException
 from greendizer.base import timestamp_to_datetime, datetime_to_timestamp
 
-
-
-
 RESPONSE_SIZE_LIMIT = 200
-
-
 
 
 class ResourceDeletedException(Exception):
     '''
-    Represents the exception raised if a resource has been 
+    Represents the exception raised if a resource has been
     deleted.
     '''
     pass
 
 
-
-
 class ResourceConflictException(Exception):
     '''
-    Represents the exception raised if a resource could not be 
+    Represents the exception raised if a resource could not be
     updated or deleted because of a potential conflict
     '''
     def __init__(self, resource, conflict_type="PATCH"):
@@ -34,7 +28,6 @@ class ResourceConflictException(Exception):
         self.__resource = resource
         self.__conflict_type = conflict_type
 
-
     @property
     def resource(self):
         '''
@@ -43,13 +36,11 @@ class ResourceConflictException(Exception):
         '''
         return self.__resource
 
-
     def refresh(self):
         '''
         Refreshes the resource.
         '''
         self.__resource.load()
-
 
     def force(self):
         '''
@@ -59,8 +50,6 @@ class ResourceConflictException(Exception):
             self.__resource.update()
         elif self.__conflict_type == "DELETE":
             self.__resource.delete()
-
-
 
 
 class Resource(object):
@@ -80,7 +69,6 @@ class Resource(object):
         self.__raw_updates = {}
         self.__deleted = False
 
-
     def _get_date_attribute(self, name):
         '''
         Parses the value of an attribute retrieved from the server
@@ -92,7 +80,6 @@ class Resource(object):
         if value:
             return timestamp_to_datetime(value)
 
-
     def _get_attribute(self, name):
         '''
         Returns the value of an attribute retrieved from the server
@@ -102,11 +89,10 @@ class Resource(object):
         if self.__deleted:
             raise ResourceDeletedException()
 
-        if not len(self.__raw_data): # What a lazy ass...
+        if not len(self.__raw_data):  # What a lazy ass...
             self.load()
 
         return self.__raw_data.get(name, None)
-
 
     def _set_attribute(self, name, value):
         '''
@@ -127,7 +113,6 @@ class Resource(object):
 
         return False
 
-
     def _register_update(self, attribute, value):
         '''
         Adds an update to the stack.
@@ -139,7 +124,6 @@ class Resource(object):
 
         if self.__raw_data.get(attribute, None) != value:
             self.__raw_updates[attribute] = value
-
 
     @property
     def exists(self):
@@ -159,11 +143,9 @@ class Resource(object):
         except(ApiException), e:
             if e.code == 404:
                 return False
-
             raise e
 
         return True
-
 
     @property
     def created_date(self):
@@ -173,7 +155,6 @@ class Resource(object):
         '''
         return self._get_date_attribute("createdDate")
 
-
     @property
     def is_deleted(self):
         '''
@@ -181,7 +162,6 @@ class Resource(object):
         @return: bool
         '''
         return self.__deleted
-
 
     @property
     def client(self):
@@ -191,7 +171,6 @@ class Resource(object):
         '''
         return self.__client
 
-
     @property
     def etag(self):
         '''
@@ -199,7 +178,6 @@ class Resource(object):
         @return: Etag
         '''
         return Etag(self.__last_modified, self.__id)
-
 
     @property
     def id(self):
@@ -209,7 +187,6 @@ class Resource(object):
         '''
         return self.__id
 
-
     @property
     def uri(self):
         '''
@@ -217,7 +194,6 @@ class Resource(object):
         @return: str
         '''
         raise NotImplementedError()
-
 
     def sync(self, data, etag):
         '''
@@ -237,13 +213,11 @@ class Resource(object):
 
         return changed
 
-
     def load_info(self):
         '''
         Loads the headers of the resource.
         '''
         self.load(True)
-
 
     def load(self, head=False):
         '''
@@ -264,7 +238,6 @@ class Resource(object):
         response = request.get_response()
         if response.status_code == 200:
             self.sync({} if head else response.data, response["Etag"])
-
 
     def update(self, prevent_conflicts=False):
         '''
@@ -287,13 +260,12 @@ class Resource(object):
             request["If-Unmodified-Since"] = self.etag.last_modified
 
         response = request.get_response()
-        if response.status_code == 409: #Conflict
+        if response.status_code == 409:  # Conflict
             raise ResourceConflictException(self, "PATCH")
 
-        if response.status_code == 204: #No-Content
+        if response.status_code == 204:  # No-Content
             self.sync(self.__raw_updates, response["Etag"])
             self.__raw_updates = {}
-
 
     def delete(self, prevent_conflicts=False):
         '''
@@ -312,15 +284,13 @@ class Resource(object):
             request["If-Unmodified-Since"] = self.etag.last_modified
 
         response = request.get_response()
-        if response.status_code == 409: #Conflict
+        if response.status_code == 409:  # Conflict
             raise ResourceConflictException(self, "DELETE")
 
-        if response.status_code == 204: #No-Content
+        if response.status_code == 204:  # No-Content
             self.__deleted = True
             self.__raw_data = {}
             self.__raw_updates = {}
-
-
 
 
 class Collection(object):
@@ -342,13 +312,11 @@ class Collection(object):
         self.__resources = {}
         self.__list = []
 
-
     def __iter__(self):
         '''
         Allows iterations over the resources contained in the collection.
         '''
         return iter(self.__list)
-
 
     def __getitem__(self, identifier):
         '''
@@ -359,14 +327,12 @@ class Collection(object):
         return (self.__list[identifier] if type(identifier) is int
                 else self.__resources.get(identifier, None))
 
-
     def __len__(self):
         '''
         Returns the number of items contained in the collection.
         @return: int
         '''
         return len(self.__resources)
-
 
     @property
     def node(self):
@@ -376,7 +342,6 @@ class Collection(object):
         '''
         return self.__node
 
-
     @property
     def uri(self):
         '''
@@ -384,7 +349,6 @@ class Collection(object):
         @return: str
         '''
         return self.__uri
-
 
     @property
     def last_modified(self):
@@ -394,7 +358,6 @@ class Collection(object):
         '''
         return self.__etag.last_modified
 
-
     @property
     def resources(self):
         '''
@@ -402,7 +365,6 @@ class Collection(object):
         @return: dict
         '''
         return self.__resources
-
 
     @property
     def count(self):
@@ -415,13 +377,11 @@ class Collection(object):
 
         return self.__content_range.total
 
-
     def load_info(self):
         '''
         Loads the headers of the collection.
         '''
         self.populate(0, 1, head=True)
-
 
     def populate(self, offset=0, limit=200, head=False, fields=None):
         '''
@@ -445,17 +405,16 @@ class Collection(object):
             request["If-None-Match"] = self.__etag
             request["If-Modified-Since"] = self.__etag.last_modified
 
-
         response = request.get_response()
         self.__content_range = response["Content-Range"]
         self.__etag = response["Etag"]
 
-        if response.status_code in [204, 416]: #(No-Content, Out-Range)
+        if response.status_code in [204, 416]:  # (No-Content, Out-Range)
             self.__resources = {}
             self.__list = []
             return
 
-        if response.status_code not in [200, 206]: #(OK, Partial Content)
+        if response.status_code not in [200, 206]:  # (OK, Partial Content)
             return Exception("Unexpected response from the server (code: %s)"
                              % response.status_code)
 
@@ -468,8 +427,6 @@ class Collection(object):
                 resource.sync(item, etag)
                 self.__list.append(resource)
                 self.__resources[str(resource.id)] = resource
-
-
 
 
 class Node(object):
@@ -488,7 +445,6 @@ class Node(object):
         self.__collections = {}
         self._resource_cls = resource_cls
 
-
     def __contains__(self, identifier):
         '''
         Checks if a resource exists
@@ -496,7 +452,6 @@ class Node(object):
         @return: bool
         '''
         return self[identifier].exists
-
 
     def __getitem__(self, identifier):
         '''
@@ -506,7 +461,6 @@ class Node(object):
         '''
         return self.get(identifier, check_existence=False)
 
-
     def get(self, *args, **kwargs):
         '''
         Gets a resource by its ID.
@@ -515,7 +469,7 @@ class Node(object):
         if not self._resource_cls:
             raise NotImplementedError()
 
-        params = [ (k, v) for k, v in kwargs.items()
+        params = [(k, v) for k, v in kwargs.items()
                   if k not in ['default', 'check_existence']]
         instance = self._resource_cls(*args, **dict(params))
 
@@ -528,9 +482,7 @@ class Node(object):
         except (ApiException), e:
             if e.code == 404:
                 return kwargs.get("default", None)
-
             raise e
-
 
     @property
     def client(self):
@@ -540,7 +492,6 @@ class Node(object):
         '''
         return self.__client
 
-
     @property
     def all(self):
         '''
@@ -548,7 +499,6 @@ class Node(object):
         @return: Collection
         '''
         return self.search()
-
 
     def search(self, query=""):
         '''
@@ -560,4 +510,3 @@ class Node(object):
             self.__collections[query] = Collection(self, self._uri, query)
 
         return self.__collections[query]
-
