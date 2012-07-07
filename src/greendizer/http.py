@@ -1,5 +1,6 @@
-import time
-import urllib, urllib2
+# -*- coding: utf-8 -*-
+import urllib
+import urllib2
 import simplejson
 import re
 import zlib
@@ -12,8 +13,6 @@ from greendizer.base import (timestamp_to_datetime, datetime_to_timestamp,
                              to_byte_string)
 
 
-
-
 COMPRESSION_DEFLATE = "deflate"
 COMPRESSION_GZIP = "gzip"
 API_ROOT = "https://api.greendizer.com/"
@@ -22,8 +21,6 @@ HTTP_METHODS_WITH_DATA = ['post', 'put', 'patch']
 HTTP_METHODS = ["head", "get", "delete", "options"] + HTTP_METHODS_WITH_DATA
 CONTENT_TYPES = ["application/xml", "application/x-www-form-urlencoded"]
 HTTP_POST_ONLY = False
-
-
 
 
 class ApiException(Exception):
@@ -37,7 +34,6 @@ class ApiException(Exception):
         '''
         self.__response = response
 
-
     @property
     def code(self):
         '''
@@ -46,7 +42,6 @@ class ApiException(Exception):
         '''
         return self.__response.status_code
 
-
     def __str__(self):
         '''
         Returns a string representation of the exception
@@ -54,8 +49,6 @@ class ApiException(Exception):
         '''
         return ((self.__response.data or {})
                 .get('desc', "Unexpected error (code: %s)" % self.code))
-
-
 
 
 class Request(object):
@@ -77,14 +70,12 @@ class Request(object):
             self.__method = method
             urllib2.Request.__init__(self, uri, **kwargs)
 
-
         def get_method(self):
             '''
             Gets the HTTP method in use.
             @return: str
             '''
             return self.__method.upper()
-
 
     def __init__(self, client=None, method="GET", uri=None, data=None,
                  content_type="application/x-www-form-urlencoded"):
@@ -110,7 +101,6 @@ class Request(object):
         if client:
             client.sign_request(self)
 
-
     def __getitem__(self, header):
         '''
         Gets the value of a header
@@ -118,7 +108,6 @@ class Request(object):
         @return object
         '''
         return self.headers.get(header, None)
-
 
     def __setitem__(self, header, value):
         '''
@@ -128,7 +117,6 @@ class Request(object):
         '''
         self.headers[header] = value
 
-
     def __delitem__(self, header):
         '''
         Removes a header
@@ -136,7 +124,6 @@ class Request(object):
         '''
         if header in self.headers:
             del self.headers[header]
-
 
     def __serialize_headers(self):
         '''
@@ -147,14 +134,13 @@ class Request(object):
         for header, value in self.headers.items():
             if type(value) in [datetime, date]:
                 serialized[header] = value.isoformat()
-            elif getattr(value, '__iter__', False): #is iterable
+            elif getattr(value, '__iter__', False):  # is iterable
                 serialized[header] = ';'.join([self.__serialize_headers(i)
                                                for i in value])
             else:
                 serialized[header] = str(value)
 
         return serialized
-
 
     def __gzip_content(self, data):
         '''
@@ -167,7 +153,6 @@ class Request(object):
         f.write(data)
         f.close()
         return bf.getvalue()
-
 
     def get_response(self):
         '''
@@ -202,7 +187,6 @@ class Request(object):
             if self.__content_type == "application/x-www-form-urlencoded":
                 data = to_byte_string(urllib.urlencode(data))
 
-
             #GZip compression
             if not greendizer.DEBUG and USE_GZIP:
                 headers["Content-Encoding"] = COMPRESSION_GZIP
@@ -228,8 +212,6 @@ class Request(object):
             raise Exception("Unable to reach the server")
 
 
-
-
 class Response(object):
     '''
     Represents an HTTP response to a greendizer API Request
@@ -240,7 +222,7 @@ class Response(object):
         @param request:Request Request at the origin of this response
         @param status_code:int Status code
         @param data:str Data carried in the body of the response
-        @param info:object Encapsulates methods to access the headers. 
+        @param info:object Encapsulates methods to access the headers.
         '''
         self.__request = request
         self.__status_code = status_code
@@ -254,7 +236,6 @@ class Response(object):
         self.__data = data
         self.__info = info
 
-
     def __getitem__(self, header):
         '''
         Gets the value of a header
@@ -262,7 +243,6 @@ class Response(object):
         @return: object
         '''
         return self.get_header(header)
-
 
     def get_header(self, name):
         '''
@@ -287,7 +267,6 @@ class Response(object):
                 #ISO8601
                 return datetime(*map(int, re.split('[^\d]', value)[:-1]))
 
-
         if header == "etag":
             return Etag.parse(self.__info.getheader(header, None))
 
@@ -295,7 +274,6 @@ class Response(object):
             return ContentRange.parse(self.__info.getheader(header, None))
 
         return self.__info.getheader(header, None)
-
 
     @property
     def status_code(self):
@@ -305,7 +283,6 @@ class Response(object):
         '''
         return self.__status_code
 
-
     @property
     def request(self):
         '''
@@ -313,7 +290,6 @@ class Response(object):
         @return: Request
         '''
         return self.__request
-
 
     @property
     def data(self):
@@ -326,8 +302,6 @@ class Response(object):
         except:
             if greendizer.DEBUG:
                 print self.__data
-
-
 
 
 class Etag(object):
@@ -343,7 +317,6 @@ class Etag(object):
         self.__last_modified = last_modified
         self.__id = identifier
 
-
     @property
     def last_modified(self):
         '''
@@ -351,7 +324,6 @@ class Etag(object):
         @return: datetime
         '''
         return self.__last_modified
-
 
     @property
     def timestamp(self):
@@ -361,7 +333,6 @@ class Etag(object):
         '''
         return datetime_to_timestamp(self.__last_modified)
 
-
     @property
     def id(self):
         '''
@@ -370,14 +341,12 @@ class Etag(object):
         '''
         return self.__id
 
-
     def __str__(self):
         '''
         Returns a string representation of the Etag
         @return: str
         '''
         return "%s-%s" % (self.timestamp, self.__id)
-
 
     @classmethod
     def parse(cls, raw):
@@ -391,8 +360,6 @@ class Etag(object):
 
         timestamp, identifier = raw.split("-")
         return cls(timestamp_to_datetime(timestamp), identifier)
-
-
 
 
 class Range(object):
@@ -410,7 +377,6 @@ class Range(object):
         self.offset = offset
         self.limit = limit
 
-
     def __str__(self):
         '''
         Returns a string representation of the object
@@ -419,14 +385,12 @@ class Range(object):
         return "%s=%d-%d" % (self.unit, self.offset, self.limit)
 
 
-
 class ContentRange(object):
     '''
     Represents an HTTP Content-Range
     '''
     REG_EXP = r'''^(?P<unit>\w+)(?:[ ]|=)(?P<offset>\d+)-(?P<last>\d+)
                 \/(?P<total>\d+)$'''
-
 
     def __init__(self, unit, offset, limit, total):
         '''
@@ -441,7 +405,6 @@ class ContentRange(object):
         self.__limit = int(limit)
         self.__total = int(total)
 
-
     @property
     def unit(self):
         '''
@@ -449,7 +412,6 @@ class ContentRange(object):
         @return: str
         '''
         return self.__unit
-
 
     @property
     def offset(self):
@@ -459,7 +421,6 @@ class ContentRange(object):
         '''
         return self.__offset
 
-
     @property
     def limit(self):
         '''
@@ -468,7 +429,6 @@ class ContentRange(object):
         '''
         return self.__limit
 
-
     @property
     def total(self):
         '''
@@ -476,7 +436,6 @@ class ContentRange(object):
         @return: int
         '''
         return self.__total
-
 
     @classmethod
     def parse(cls, raw):
@@ -493,4 +452,3 @@ class ContentRange(object):
             return
 
         return cls(*match.groups())
-

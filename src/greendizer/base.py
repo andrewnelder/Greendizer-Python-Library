@@ -1,15 +1,12 @@
+# -*- coding: utf-8 -*-
 import re
 from math import modf
 from datetime import datetime, timedelta
 
 
-
-
 ## {{{ http://code.activestate.com/recipes/65215/ (r5)
 EMAIL_PATTERN = re.compile('^.+\\@(\\[?)[a-zA-Z0-9\\-\\.]' \
                            '+\\.([a-zA-Z]{2,3}|[0-9]{1,3})(\\]?)$')
-
-
 
 
 def to_unicode(text):
@@ -21,8 +18,6 @@ def to_unicode(text):
     return text.decode("UTF-8") if type(text) == str else unicode(text)
 
 
-
-
 def to_byte_string(text):
     '''
     Converts an input text to a unicode object.
@@ -30,8 +25,6 @@ def to_byte_string(text):
     @returns:unicode
     '''
     return text.encode("UTF-8") if type(text) == unicode else str(text)
-
-
 
 
 def is_valid_email(s):
@@ -44,8 +37,6 @@ def is_valid_email(s):
     return (s and len(s) > 7 and EMAIL_PATTERN.match(s))
 
 
-
-
 def timestamp_to_datetime(s):
     '''
     Parses a timestamp to a datetime instance.
@@ -54,8 +45,6 @@ def timestamp_to_datetime(s):
     '''
     f, i = modf(long(s) / float(1000))
     return datetime.fromtimestamp(i) + timedelta(milliseconds=f * 1000)
-
-
 
 
 def datetime_to_timestamp(d):
@@ -67,17 +56,13 @@ def datetime_to_timestamp(d):
     return long(d.strftime("%s") + "%03d" % (d.time().microsecond / 1000))
 
 
-
-
 def extract_id_from_uri(s):
     '''
     Returns the ID section of an URI.
     @param s:str URI
     @return: str
     '''
-    return [ item for item in s.split("/") if item ][-1]
-
-
+    return [item for item in s.split("/") if item][-1]
 
 
 class Address(object):
@@ -92,7 +77,6 @@ class Address(object):
         self.__address_dict = address_dict
         self.__mutable = mutable
 
-
     def __getattr__(self, field):
         '''
         Gets a field of the address.
@@ -103,7 +87,6 @@ class Address(object):
             return self.__address_dict[field]
         except KeyError:
             raise AttributeError, field
-
 
     def __setattribute__(self, field, value):
         '''
@@ -119,4 +102,3 @@ class Address(object):
             raise AttributeError("Address has no such attribute.")
 
         self.__address_dict[field] = value
-

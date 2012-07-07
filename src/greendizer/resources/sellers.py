@@ -1,5 +1,4 @@
-import binascii
-import struct
+# -*- coding: utf-8 -*-
 from datetime import timedelta
 from greendizer.base import (Address, extract_id_from_uri,
                              to_byte_string)
@@ -10,10 +9,7 @@ from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
                                   ThreadNodeBase, MessageNodeBase)
 
 
-
-
-MAX_CONTENT_LENGTH = 512000 #500kb
-
+MAX_CONTENT_LENGTH = 512000  # 500kb
 
 
 class ResourceNotFoundException(Exception):
@@ -21,7 +17,6 @@ class ResourceNotFoundException(Exception):
     Represents the exception raised if a resource could not be found.
     '''
     pass
-
 
 
 class Seller(User):
@@ -37,7 +32,6 @@ class Seller(User):
         self.__emailNode = EmailNode(self)
         self.__buyerNode = BuyerNode(self)
 
-
     @property
     def uri(self):
         '''
@@ -45,7 +39,6 @@ class Seller(User):
         @return: str
         '''
         return "sellers/me/"
-
 
     @property
     def emails(self):
@@ -55,7 +48,6 @@ class Seller(User):
         '''
         return self.__emailNode
 
-
     @property
     def threads(self):
         '''
@@ -64,7 +56,6 @@ class Seller(User):
         '''
         return self.__threadNode
 
-
     @property
     def buyers(self):
         '''
@@ -72,8 +63,6 @@ class Seller(User):
         @return: BuyerNode
         '''
         return self.__buyerNode
-
-
 
 
 class EmailNode(Node):
@@ -89,7 +78,6 @@ class EmailNode(Node):
         super(EmailNode, self).__init__(seller.client, seller.uri + "emails/",
                                         Email)
 
-
     def get(self, identifier, default=None, **kwargs):
         '''
         Gets an email by its ID.
@@ -98,8 +86,6 @@ class EmailNode(Node):
         '''
         return super(EmailNode, self).get(self.__seller, identifier,
                                           default=default, **kwargs)
-
-
 
 
 class Email(EmailBase):
@@ -113,7 +99,6 @@ class Email(EmailBase):
         super(Email, self).__init__(*args, **kwargs)
         self.__invoiceNode = InvoiceNode(self)
 
-
     @property
     def invoices(self):
         '''
@@ -121,8 +106,6 @@ class Email(EmailBase):
         @return: greendizer.dal.Node
         '''
         return self.__invoiceNode
-
-
 
 
 class InvoiceNode(InvoiceNodeBase):
@@ -137,7 +120,6 @@ class InvoiceNode(InvoiceNodeBase):
         '''
         super(InvoiceNode, self).__init__(email, Invoice)
 
-
     @property
     def outbox(self):
         '''
@@ -145,7 +127,6 @@ class InvoiceNode(InvoiceNodeBase):
         @return: Collection
         '''
         return self.search(query="location==0")
-
 
     def get_by_custom_id(self, custom_id):
         '''
@@ -157,12 +138,11 @@ class InvoiceNode(InvoiceNodeBase):
 
         collection = self.search(query="customId==" + custom_id)
         collection.populate(offset=0, limit=1)
-        if not len(collection) :
+        if not len(collection):
             raise ResourceNotFoundException("Could not find invoice with " \
                                             "custom_id " + custom_id)
 
         return collection[0]
-
 
     def send(self, xmli, signature=True):
         '''
@@ -187,8 +167,8 @@ class InvoiceNode(InvoiceNodeBase):
             from os import sys
             size = sys.getsizeof(xmli)
         except AttributeError:
-            import base64 #2.5 and older...
-            size = len(base64.encodestring(xmli)) #1 ASCII = 1 byte
+            import base64  # 2.5 and older...
+            size = len(base64.encodestring(xmli))  # 1 ASCII = 1 byte
 
         if size > MAX_CONTENT_LENGTH:
             raise ValueError("XMLi's size is limited to %skb."
@@ -198,11 +178,9 @@ class InvoiceNode(InvoiceNodeBase):
                           uri=self._uri, content_type="application/xml")
 
         response = request.get_response()
-        if response.status_code == 202: #Accepted
+        if response.status_code == 202:  # Accepted
             return InvoiceReport(self.email,
                                  extract_id_from_uri(response["Location"]))
-
-
 
 
 class Invoice(InvoiceBase):
@@ -217,7 +195,6 @@ class Invoice(InvoiceBase):
         self.__buyer_address = None
         self.__buyer_delivery_address = None
 
-
     @property
     def custom_id(self):
         '''
@@ -225,7 +202,6 @@ class Invoice(InvoiceBase):
         @return: str
         '''
         return self._get_attribute("customId")
-
 
     @property
     def buyer_name(self):
@@ -235,7 +211,6 @@ class Invoice(InvoiceBase):
         '''
         return (self._get_attribute("buyer") or {}).get("name", None)
 
-
     @property
     def buyer_email(self):
         '''
@@ -243,7 +218,6 @@ class Invoice(InvoiceBase):
         @return: str
         '''
         return (self._get_attribute("buyer") or {}).get("email", None)
-
 
     @property
     def buyer_address(self):
@@ -257,7 +231,6 @@ class Invoice(InvoiceBase):
 
         return self.__buyer_address
 
-
     @property
     def buyer_delivery_address(self):
         '''
@@ -270,7 +243,6 @@ class Invoice(InvoiceBase):
 
         return self.__buyer_delivery_address
 
-
     @property
     def buyer(self):
         '''
@@ -280,15 +252,12 @@ class Invoice(InvoiceBase):
         buyer_uri = (self._get_attribute("buyer") or {}).get("uri", None)
         return self.client.seller.buyers[extract_id_from_uri(buyer_uri)]
 
-
     def cancel(self):
         '''
         Cancels the invoice.
         '''
         self._register_update("canceled", True)
         self.update()
-
-
 
 
 class InvoiceReportNode(Node):
@@ -305,7 +274,6 @@ class InvoiceReportNode(Node):
                                                 email.uri + "invoices/reports/",
                                                 InvoiceReport)
 
-
     def get(self, identifier, default=None, **kwargs):
         '''
         Gets an invoice report by its ID.
@@ -314,8 +282,6 @@ class InvoiceReportNode(Node):
         '''
         return super(InvoiceReportNode, self).get(self.__email, identifier,
                                                   default=default, **kwargs)
-
-
 
 
 class InvoiceReport(Resource):
@@ -331,7 +297,6 @@ class InvoiceReport(Resource):
         self.__email = email
         super(InvoiceReport, self).__init__(email.client, identifier)
 
-
     @property
     def email(self):
         '''
@@ -339,7 +304,6 @@ class InvoiceReport(Resource):
         @return: Email
         '''
         return self.__email
-
 
     @property
     def uri(self):
@@ -349,7 +313,6 @@ class InvoiceReport(Resource):
         '''
         return "%sinvoices/reports/%s/" % (self.__email.uri, self.id)
 
-
     @property
     def state(self):
         '''
@@ -357,7 +320,6 @@ class InvoiceReport(Resource):
         @return: int
         '''
         return self._get_attribute("state") or 0
-
 
     @property
     def ip_address(self):
@@ -367,7 +329,6 @@ class InvoiceReport(Resource):
         '''
         return self._get_attribute("ipAddress")
 
-
     @property
     def hash(self):
         '''
@@ -375,7 +336,6 @@ class InvoiceReport(Resource):
         @return: str
         '''
         return self._get_attribute("hash")
-
 
     @property
     def error(self):
@@ -385,7 +345,6 @@ class InvoiceReport(Resource):
         '''
         return self._get_attribute("error")
 
-
     @property
     def start(self):
         '''
@@ -393,7 +352,6 @@ class InvoiceReport(Resource):
         @return: datetime
         '''
         return self._get_date_attribute("startTime")
-
 
     @property
     def end(self):
@@ -404,7 +362,6 @@ class InvoiceReport(Resource):
         return (self.start
                 + timedelta(milliseconds=self._get_attribute("elapsedTime")))
 
-
     @property
     def invoices_count(self):
         '''
@@ -412,8 +369,6 @@ class InvoiceReport(Resource):
         @return: int
         '''
         return self._get_attribute("invoicesCount")
-
-
 
 
 class MessageNode(MessageNodeBase):
@@ -426,9 +381,6 @@ class MessageNode(MessageNodeBase):
         @param thread: Thread  Thread instance
         '''
         super(MessageNode, self).__init__(thread, Message)
-
-
-
 
 
 class Message(MessageBase):
@@ -446,8 +398,6 @@ class Message(MessageBase):
             return self.thread.seller.buyers[buyer_id]
 
 
-
-
 class ThreadNode(ThreadNodeBase):
     '''
     Represents a node giving access to conversation threads from a seller's
@@ -463,7 +413,6 @@ class ThreadNode(ThreadNodeBase):
                                          seller.uri + "threads/",
                                          Thread)
 
-
     def get(self, identifier, default=None, **kwargs):
         '''
         Gets a thread by its ID.
@@ -473,7 +422,6 @@ class ThreadNode(ThreadNodeBase):
         return super(ThreadNode, self).get(self.__seller, identifier,
                                            default=default, **kwargs)
 
-
     @property
     def seller(self):
         '''
@@ -481,8 +429,6 @@ class ThreadNode(ThreadNodeBase):
         @return: Seller
         '''
         return self.__seller
-
-
 
 
 class Thread(ThreadBase):
@@ -499,7 +445,6 @@ class Thread(ThreadBase):
         super(Thread, self).__init__(seller.client, identifier)
         self.__messageNode = MessageNode(self)
 
-
     @property
     def uri(self):
         '''
@@ -508,7 +453,6 @@ class Thread(ThreadBase):
         '''
         return "%sthreads/%s/" % (self.__seller.uri, self.id)
 
-
     @property
     def messages(self):
         '''
@@ -516,8 +460,6 @@ class Thread(ThreadBase):
         @return: MessageNode
         '''
         return self.__messageNode
-
-
 
 
 class BuyerNode(Node):
@@ -532,7 +474,6 @@ class BuyerNode(Node):
         self.__seller = seller
         super(BuyerNode, self).__init__(seller, seller.uri + "buyers/", Buyer)
 
-
     def get(self, identifier, default=None, **kwargs):
         '''
         Gets a buyer by its ID.
@@ -541,8 +482,6 @@ class BuyerNode(Node):
         '''
         return super(BuyerNode, self).get(self.__seller, identifier,
                                           default=default, **kwargs)
-
-
 
 
 class Buyer(HistoryBase):
@@ -558,7 +497,6 @@ class Buyer(HistoryBase):
         self.__delivery_address = None
         super(Buyer, self).__init__(seller.client, identifier)
 
-
     @property
     def seller(self):
         '''
@@ -566,7 +504,6 @@ class Buyer(HistoryBase):
         @return: Seller
         '''
         return self.__seller
-
 
     @property
     def address(self):
@@ -579,7 +516,6 @@ class Buyer(HistoryBase):
 
         return self.__address
 
-
     @property
     def delivery_address(self):
         '''
@@ -591,7 +527,6 @@ class Buyer(HistoryBase):
 
         return self.__delivery_address
 
-
     @property
     def name(self):
         '''
@@ -599,7 +534,6 @@ class Buyer(HistoryBase):
         @return: str
         '''
         return self._get_attribute("name")
-
 
     @property
     def uri(self):
