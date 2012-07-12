@@ -2,5 +2,5 @@
 .pydevproject
 .project
 *.pyc
-src/tests/
+tests/
 .DS_Store
