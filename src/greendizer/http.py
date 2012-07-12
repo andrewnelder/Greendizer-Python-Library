@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import urllib
 import urllib2
-import simplejson
 import re
 import zlib
 import urlparse
@@ -11,6 +10,12 @@ from StringIO import StringIO
 import greendizer
 from greendizer.base import (timestamp_to_datetime, datetime_to_timestamp,
                              to_byte_string)
+
+
+try:
+    import json #2.6+
+except ImportError:
+    import simplejson as json
 
 
 COMPRESSION_DEFLATE = "deflate"
@@ -298,7 +303,7 @@ class Response(object):
         @return: dict
         '''
         try:
-            return simplejson.loads(self.__data)
+            return json.loads(self.__data)
         except:
             if greendizer.DEBUG:
                 print self.__data
