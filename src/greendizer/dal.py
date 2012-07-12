@@ -203,15 +203,9 @@ class Resource(object):
         '''
         self.__last_modified = etag.last_modified
         self.__id = etag.id
-
-        if "etag" in data:
-            del data["etag"]
-
-        changed = False
-        for item, value in data.items():
-            changed = self._set_attribute(item, value) or False
-
-        return changed
+        data.pop('etag')
+        return any([self._set_attribute(item, value)
+                    for item, value in data.items()])
 
     def load_info(self):
         '''
@@ -325,7 +319,7 @@ class Collection(object):
         @return: Resource
         '''
         return (self.__list[identifier] if type(identifier) is int
-                else self.__resources.get(identifier, None))
+                else self.__resources.get(identifier))
 
     def __len__(self):
         '''
@@ -388,6 +382,8 @@ class Collection(object):
         Populates the collection with resources from the server
         @param offset:int Offset
         @param limit:int Limit (Max: 200)
+        @param head:bool Value indicating whether to use a HEAD method or not.
+        @param fields:str List of fields to request or to exclude.
         '''
         uri = self.__uri
 
@@ -466,14 +462,14 @@ class Node(object):
         Gets a resource by its ID.
         @return: Resource
         '''
+        check_existence = kwargs.pop('check_existence', True)
+        default = kwargs.pop('default', None)
+        
         if not self._resource_cls:
             raise NotImplementedError()
-
-        params = [(k, v) for k, v in kwargs.items()
-                  if k not in ['default', 'check_existence']]
-        instance = self._resource_cls(*args, **dict(params))
-
-        if not kwargs.get('check_existence', True) or 'default' not in kwargs:
+        
+        instance = self._resource_cls(*args, **kwargs)
+        if not check_existence:
             return instance
 
         try:
@@ -481,7 +477,7 @@ class Node(object):
             return instance
         except (ApiException), e:
             if e.code == 404:
-                return kwargs.get("default", None)
+                return default
             raise e
 
     @property

@@ -78,14 +78,13 @@ class EmailNode(Node):
         super(EmailNode, self).__init__(seller.client, seller.uri + "emails/",
                                         Email)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an email by its ID.
         @param identifier:str ID of the email address.
         @return: Email
         '''
-        return super(EmailNode, self).get(self.__seller, identifier,
-                                          default=default, **kwargs)
+        return super(EmailNode, self).get(self.__seller, identifier, **kwargs)
 
 
 class Email(EmailBase):
@@ -274,14 +273,14 @@ class InvoiceReportNode(Node):
                                                 email.uri + "invoices/reports/",
                                                 InvoiceReport)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an invoice report by its ID.
         @param identifier:str ID of the invoice report.
         @return: InvoiceReport
         '''
         return super(InvoiceReportNode, self).get(self.__email, identifier,
-                                                  default=default, **kwargs)
+                                                  **kwargs)
 
 
 class InvoiceReport(Resource):
@@ -413,14 +412,13 @@ class ThreadNode(ThreadNodeBase):
                                          seller.uri + "threads/",
                                          Thread)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets a thread by its ID.
         @param identifier:str ID of the thread.
         @return: Thread.
         '''
-        return super(ThreadNode, self).get(self.__seller, identifier,
-                                           default=default, **kwargs)
+        return super(ThreadNode, self).get(self.__seller, identifier, **kwargs)
 
     @property
     def seller(self):
@@ -474,14 +472,13 @@ class BuyerNode(Node):
         self.__seller = seller
         super(BuyerNode, self).__init__(seller, seller.uri + "buyers/", Buyer)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets a buyer by its ID.
         @param identifier:ID of the buyer.
         @return: Buyer
         '''
-        return super(BuyerNode, self).get(self.__seller, identifier,
-                                          default=default, **kwargs)
+        return super(BuyerNode, self).get(self.__seller, identifier, **kwargs)
 
 
 class Buyer(HistoryBase):

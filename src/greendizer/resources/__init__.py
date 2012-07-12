@@ -391,14 +391,14 @@ class InvoiceNodeBase(Node):
                                               uri=email.uri + "invoices/",
                                               resource_cls=resource_cls)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an invoice using its ID.
         @param identifier:str ID of the invoice.
         @return: Invoice
         '''
         return super(InvoiceNodeBase, self).get(self.__email, identifier,
-                                                default=None, **kwargs)
+                                                **kwargs)
 
     @property
     def email(self):

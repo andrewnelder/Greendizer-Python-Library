@@ -92,14 +92,13 @@ class EmailNode(Node):
         super(EmailNode, self).__init__(user.client, user.uri + "emails/",
                                         Email)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an email address by its ID.
         @param identifier:str ID of the email address.
         @return: Email
         '''
-        return super(EmailNode, self).get(self.__user, identifier,
-                                          default=default, **kwargs)
+        return super(EmailNode, self).get(self.__user, identifier, **kwargs)
 
 
 class Invoice(InvoiceBase):
@@ -129,14 +128,13 @@ class InvoiceNode(InvoiceNodeBase):
         self.__email = email
         super(InvoiceNode, self).__init__(email, Invoice)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an invoice by its ID.
         @param identifier:str ID of the invoice.
         @return: Invoice
         '''
-        return super(InvoiceNode, self).get(self.__email, identifier,
-                                            default=default, **kwargs)
+        return super(InvoiceNode, self).get(self.__email, identifier, **kwargs)
 
 
 class Thread(ThreadBase):
@@ -193,14 +191,14 @@ class ThreadNode(ThreadNodeBase):
         super(ThreadNode, self).__init__(email.client, email.uri + "threads/",
                                          Thread)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets a thread by its ID.
         @param identifier:str ID of the thread.
         @return: str
         '''
         return super(ThreadNode, self).get(self.__email, identifier,
-                                           default=default, **kwargs)
+                                           **kwargs)
 
 
 class MessageNode(MessageNodeBase):
@@ -272,14 +270,13 @@ class SellerNode(Node):
                                         email.uri + "sellers/",
                                         Seller)
 
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets the history of a specific seller
         @param identifier:str ID of the seller.
         @return: Seller
         '''
-        return super(SellerNode, self).get(self.__email, identifier,
-                                           default=default, **kwargs)
+        return super(SellerNode, self).get(self.__email, identifier, **kwargs)
 
     @property
     def email(self):
