@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 import re
 from xml.dom.minidom import Document
-from StringIO import StringIO
 from datetime import datetime, date
 from decimal import Decimal, ROUND_DOWN
 from greendizer.base import is_valid_email, to_unicode, to_byte_string
 
+
+try:
+    from cStringIO import cStringIO as StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 
 XML_NAMESPACE_PATTERN = re.compile(r'^(?P<prefix>\w+):' \
                                    '(?P<uri>http(?:s)?:\/\/[a-z.-_]+)$')
