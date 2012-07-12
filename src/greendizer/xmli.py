@@ -490,7 +490,7 @@ class Invoice(ExtensibleXMLiElement):
     def __init__(self, name=None, description=None, currency=None,
                  status=INVOICE_PAID, date=date.today(), due_date=None,
                  custom_id=None, terms=None, buyer=Contact(),
-                 shipping=Shipping()):
+                 shipping=None):
         '''
         Initializes a new instance of the Invoice class.
         @param name:str Invoice name.
@@ -503,7 +503,7 @@ class Invoice(ExtensibleXMLiElement):
         super(Invoice, self).__init__()
 
         self.buyer = buyer
-        self.shipping = shipping
+        self.__shipping = shipping
         self.name = name
         self.description = description
         self.currency = currency
@@ -521,6 +521,14 @@ class Invoice(ExtensibleXMLiElement):
         @return: list
         '''
         return self.__groups
+    
+    def __get_shipping(self):
+        '''
+        Gets the shipping details of the invoice.
+        '''
+        if not self.__shipping:
+            self.__shipping = Shipping()
+        return self.__shipping
 
     def __set_name(self, value):
         '''
@@ -599,12 +607,13 @@ class Invoice(ExtensibleXMLiElement):
         '''
         return ((sum([group.total for group in self.__groups]) or Decimal(0))
                 .quantize(SIGNIFICANCE_EXPONENT, rounding=ROUND_DOWN))
-
+        
     name = property(lambda self: self.__name, __set_name)
     status = property(lambda self: self.__status, __set_status)
     currency = property(lambda self: self.__currency, __set_currency)
     date = property(lambda self: self.__date, __set_date)
     due_date = property(lambda self: self.__due_date, __set_due_date)
+    shipping = property(__get_shipping)
 
     def to_xml(self):
         '''
@@ -624,7 +633,7 @@ class Invoice(ExtensibleXMLiElement):
         root = doc.createElement("invoice")
         root.appendChild(self.buyer.to_xml("buyer"))
 
-        if self.shipping:
+        if self.__shipping:
             root.appendChild(self.shipping.to_xml())
 
         self._create_text_node(root, "name", self.name, True)
