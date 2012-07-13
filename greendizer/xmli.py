@@ -4,6 +4,7 @@ from xml.dom.minidom import Document
 from datetime import datetime, date
 from decimal import Decimal, ROUND_DOWN
 from greendizer import VERSION
+from greendizer import xmldsig
 from greendizer.base import is_valid_email, to_unicode, to_byte_string
 
 
@@ -20,7 +21,7 @@ ZERO = Decimal(0)
 SIGNIFICANCE_EXPONENT = Decimal(10) ** -5  # 0.00001
 MAX_LENGTH = 100
 VERSION = "2.0"
-AGENT = "Greendizer Pyzer Lib %s" % VERSION
+AGENT = "Greendizer Python Lib %s" % VERSION
 CURRENCIES = ['AED', 'ALL', 'ANG', 'ARS', 'AUD', 'AWG', 'BBD', 'BDT', 'BGN',
               'BHD', 'BIF', 'BMD', 'BND', 'BOB', 'BRL', 'BTN', 'BWP', 'BYR',
               'BZD', 'CAD', 'CHF', 'CLP', 'CNY', 'COP', 'CRC', 'CUP', 'CVE',
@@ -39,7 +40,6 @@ CURRENCIES = ['AED', 'ALL', 'ANG', 'ARS', 'AUD', 'AWG', 'BBD', 'BDT', 'BGN',
               'VUV', 'WST', 'XAF', 'XAG', 'XCD', 'XCP', 'XOF', 'XPD', 'XPF',
               'XPT', 'YER', 'ZAR', 'ZMK', 'ZWD']
 INVOICE_DUE = "due"
-INVOICE_PAID = "paid"
 INVOICE_CANCELED = "canceled"
 INVOICE_IRRECOVERABLE = "irrecoverable"
 UNITS = ['BO', 'CL', 'CMK', 'CMQ', 'CM', 'CT', 'DL', 'DM', 'E4', 'CQ', 'GAL',
@@ -70,6 +70,10 @@ COUNTRIES = ["AF", "AX", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR",
              "TT", "TN", "TR", "TM", "TC", "TV", "UG", "UA", "AE", "GB", "US",
              "UM", "UY", "UZ", "VU", "VA", "VE", "VN", "VG", "VI", "WF", "YE",
              "ZM", "ZW"]
+PAYMENT_METHOD_OTHER = 'other'
+PAYMENT_METHOD_CARD = 'card'
+PAYMENT_METHOD_CHEQUE = 'cheque'
+PAYMENT_METHOD_CASH = 'cash'
 
 
 def is_empty_or_none(s):
@@ -421,77 +425,6 @@ class Shipping(XMLiElement):
         return root
 
 
-class XMLiBuilder(object):
-    '''
-    Encapsulates methods and tools to generate a valid XMLi.
-    '''
-    def __init__(self, seller_client):
-        '''
-        Initializes a new instance of the XMLiBuilder class.
-        @param seller_client:greendizer.SellerClient A seller client instance.
-        '''
-        self.__seller_client = seller_client
-        self.__invoices = []
-
-    @property
-    def invoices(self):
-        '''
-        Gets the list of invoices
-        @return:list
-        '''
-        return self.__invoices
-
-    def to_xml(self, signed=False):
-        '''
-        Returns a DOM Document representing the invoice
-        @return: Document
-        '''
-        #Signed invoices can't be grouped inside one 'xmli' tag.
-        max_length = 1 if signed else MAX_LENGTH
-
-        if len(self.__invoices) > max_length:
-            raise Exception("Limited to %d invoices at a time." % max_length)
-
-        doc = Document()
-        root = doc.createElement("xmli")
-        root.setAttribute("version", VERSION)
-        root.setAttribute("invoice-agent", AGENT)
-        doc.appendChild(root)
-
-        content = doc.createElement("invoices")
-        root.appendChild(content)
-        for invoice in self.__invoices:
-            content.appendChild(invoice.to_xml())
-
-        return doc
-
-    def to_string(self, indent="", addindent="", newl=""):
-        '''
-        Returns a string representation of the XMLi element.
-        @return: str
-        '''
-        buf = StringIO('')
-        self.to_xml().writexml(buf, indent=indent, addindent=addindent,
-                               newl=newl, encoding="UTF-8")
-        serialized = buf.getvalue()
-        buf.close()
-        return serialized
-
-    def __str__(self):
-        '''
-        Returns a string representation of the XMLi
-        @return: str
-        '''
-        return self.to_string()
-
-    def __unicode__(self):
-        '''
-        Returns a unicode string representation of the XMLi.
-        @return: unicode
-        '''
-        return to_unicode(self.to_string())
-
-
 class Invoice(ExtensibleXMLiElement):
     '''
     Represents an Invoice object in the XMLi.
@@ -502,7 +435,8 @@ class Invoice(ExtensibleXMLiElement):
     def __init__(self, name=None, description=None, currency=None,
                  status=INVOICE_PAID, date=date.today(), due_date=None,
                  custom_id=None, terms=None, seller=Contact(), buyer=Contact(),
-                 shipping=None):
+                 shipping=None, legal_mentions=None, 
+                 disable_notification=None,):
         '''
         Initializes a new instance of the Invoice class.
         @param name:str Invoice name.
@@ -511,9 +445,17 @@ class Invoice(ExtensibleXMLiElement):
         @param status:str Invoice status.
         @param date:datetime Invoice date.
         @param due_date:date Invoice's due date.
+        @param custom_id:str Seller set custom ID of the invoice.
+        @param terms:str Specific terms of the invoice
+        @param seller:Contact Sender of the invoice
+        @param buyer:Contact Recipient of the invoice.
+        @param shipping:Shipping Shipping details of the invoice.
+        @param legal_mentions:str Mandatory legal mentions on the invoice.
+        @param disable_notification:bool Value indicating whether to disable
+        sending a notification to a customer or not. 
         '''
         super(Invoice, self).__init__()
-
+        
         self.seller = seller
         self.buyer = buyer
         self.__shipping = shipping
@@ -526,6 +468,9 @@ class Invoice(ExtensibleXMLiElement):
         self.custom_id = custom_id
         self.terms = terms
         self.__groups = []
+        self.__payments = []
+        self.legal_mentions = legal_mentions
+        self.disable_notification = disable_notification
 
     @property
     def groups(self):
@@ -535,7 +480,16 @@ class Invoice(ExtensibleXMLiElement):
         '''
         return self.__groups
     
-    def __get_shipping(self):
+    @property
+    def payments(self):
+        '''
+        Gets the list of payments.
+        @returns: list
+        '''
+        return self.__payments
+    
+    @property
+    def shipping(self):
         '''
         Gets the shipping details of the invoice.
         '''
@@ -626,7 +580,6 @@ class Invoice(ExtensibleXMLiElement):
     currency = property(lambda self: self.__currency, __set_currency)
     date = property(lambda self: self.__date, __set_date)
     due_date = property(lambda self: self.__due_date, __set_due_date)
-    shipping = property(__get_shipping)
 
     def to_xml(self):
         '''
@@ -645,6 +598,9 @@ class Invoice(ExtensibleXMLiElement):
 
         doc = Document()
         root = doc.createElement("invoice")
+        root.setAttribute("version", VERSION)
+        root.setAttribute("invoice-agent", AGENT)
+        
         root.appendChild(self.seller.to_xml("seller"))
         root.appendChild(self.buyer.to_xml("buyer"))
 
@@ -659,18 +615,108 @@ class Invoice(ExtensibleXMLiElement):
         self._create_text_node(root, "dueDate", self.due_date)
         self._create_text_node(root, "customId", self.custom_id, True)
         self._create_text_node(root, "terms", self.terms, True)
+        self._create_text_node(root, "mentions", self.legal_mentions, True)
         self._create_text_node(root, "total", self.total)
+        
+        if len(self.__payments):
+            payments = doc.createElement("payments")
+            for payment in self.__payments:
+                if not issubclass(payment.__class__, Payment):
+                    raise Exception('payment of type %s is not an instance ' /
+                                    'or a subclass of %s' % 
+                                    (payment.__class__.__name__, 
+                                     Payment.__name__))
+                payments.appendChild(payment.to_xml())
+            body.appendChild(payments)
 
         body = doc.createElement("body")
         root.appendChild(body)
-
+        
         groups = doc.createElement("groups")
         body.appendChild(groups)
         for group in self.__groups:
+            if not issubclass(group.__class__, Group):
+                raise Exception('group of type %s is not an instance ' /
+                                'or a subclass of %s' %
+                                (group.__class__.__name__, Group.__name__))
             groups.appendChild(group.to_xml())
 
         #Adding custom elements
         super(Invoice, self).to_xml(body)
+        return root
+    
+    def to_signed_str(self, private, public):
+        '''
+        Returns a signed version of the invoice.
+        @param private:basestrign Private key
+        @param public:basestrign Public key
+        @return: str
+        '''
+        return xmldsig.sign(to_byte_string(self.to_string()), private, public)
+    
+
+class Payment(XMLiElement):
+    '''
+    Represents a payment recorded for an invoice.
+    '''
+    def __init__(self, amount=None, method=PAYMENT_METHOD_OTHER,
+                 ref=None, date=datetime.now()):
+        '''
+        Initializes a new instance of the Payment class.
+        '''
+        self.__amount = None
+        self.amount = amount
+        self.__method = method
+        self.method = method
+        self.ref = ref
+        self.date = date
+    
+    def __set_amount(self, value):
+        '''
+        Sets the amount of the payment operation.
+        @param value:float
+        '''
+        try:    
+            self.__amount = Decimal(value)
+        except:
+            raise ValueError('Invalid amount value')
+        
+    def __set_method(self, value):
+        '''
+        Sets the amount of the payment.
+        '''
+        if value not in [PAYMENT_METHOD_OTHER, PAYMENT_METHOD_CARD,
+                         PAYMENT_METHOD_CHEQUE, PAYMENT_METHOD_CASH,]:
+            raise ValueError('Invalid amount value')
+        
+        self.__method = method
+        
+    def __set_date(self, value):
+        '''
+        Sets the date of the payment.
+        @param value:datetime
+        '''    
+        if not issubclass(value.__class__, date):
+            raise ValueError('Invalid date value')
+        
+        self.__date = value
+    
+    amount = property(lambda self: self.__amount, __set_amount)
+    method = property(lambda self: self.__method, __set_method)
+    date = property(lambda self: self.__date, __set_date)
+    
+    def to_xml(self):
+        '''
+        Returns a DOM representation of the payment.
+        @return: Element
+        '''
+        doc = Document()
+        root = doc.createElement("payment")
+        self._create_text_node(root, "amount", self.amount)
+        self._create_text_node(root, "date", self.date)
+        self._create_text_node(root, "method", self.method)
+        self._create_text_node(root, "ref", self.ref, True)
+        super(Payment, self).to_xml(root)
         return root
 
 
@@ -737,6 +783,10 @@ class Group(ExtensibleXMLiElement):
         lines = doc.createElement("lines")
         root.appendChild(lines)
         for line in self.__lines:
+            if not issubclass(line.__class__, Line):
+                raise Exception('line of type %s is not an instance ' /
+                                'or a subclass of %s' %
+                                (line.__class__.__name__, Line.__name__))
             lines.appendChild(line.to_xml())
 
         super(Group, self).to_xml(root)
@@ -894,12 +944,21 @@ class Line(ExtensibleXMLiElement):
             discounts = root.ownerDocument.createElement("discounts")
             root.appendChild(discounts)
             for discount in self.__discounts:
+                if not issubclass(discount.__class__, Discount):
+                    raise Exception('discount of type %s is not an instance ' /
+                                    'or a subclass of %s' %
+                                    (discount.__class__.__name__, 
+                                     Discount.__name__))
                 discounts.appendChild(discount.to_xml())
 
         if len(self.__taxes):
             taxes = root.ownerDocument.createElement("taxes")
             root.appendChild(taxes)
             for tax in self.__taxes:
+                if not issubclass(tax.__class__, Tax):
+                    raise Exception('tax of type %s is not an instance ' /
+                                    'or a subclass of %s' %
+                                    (tax.__class__.__name__, Tax.__name__))
                 taxes.appendChild(tax.to_xml())
 
         super(Line, self).to_xml(root)
