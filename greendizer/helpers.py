@@ -2,8 +2,6 @@
 from greendizer.xmli import CURRENCIES
 
 
-
-
 class Address(object):
     '''
     Represents a postal address.
@@ -16,7 +14,6 @@ class Address(object):
         self.__address_dict = address_dict
         self.__mutable = mutable
 
-
     def __getattr__(self, field):
         '''
         Gets a field of the address.
@@ -27,7 +24,6 @@ class Address(object):
             return self.__address_dict[field]
         except KeyError:
             raise AttributeError, field
-
 
     def __setattribute__(self, field, value):
         '''
@@ -43,8 +39,6 @@ class Address(object):
             raise AttributeError("Address has no such attribute.")
 
         self.__address_dict[field] = value
-
-
 
 
 class CurrencyMetrics(object):
@@ -66,7 +60,6 @@ class CurrencyMetrics(object):
         self.__currency_code = currency_code
         self.__data = data
 
-
     @property
     def currency(self):
         '''
@@ -74,7 +67,6 @@ class CurrencyMetrics(object):
         @return: str
         '''
         return self.__currency_codes
-
 
     @property
     def min(self):
@@ -84,7 +76,6 @@ class CurrencyMetrics(object):
         '''
         return self.__data['min']
 
-
     @property
     def max(self):
         '''
@@ -92,7 +83,6 @@ class CurrencyMetrics(object):
         @return: float
         '''
         return self.__data['max']
-
 
     @property
     def average(self):
@@ -102,7 +92,6 @@ class CurrencyMetrics(object):
         '''
         return self.__data['average']
 
-
     @property
     def sum(self):
         '''
@@ -110,7 +99,6 @@ class CurrencyMetrics(object):
         @return: float
         '''
         return self.__data['sum']
-
 
     @property
     def total_taxes(self):
@@ -120,7 +108,6 @@ class CurrencyMetrics(object):
         '''
         return self.__data['totalTaxes']
 
-
     @property
     def total_discounts(self):
         '''
@@ -128,7 +115,6 @@ class CurrencyMetrics(object):
         @return: float
         '''
         return self.__data['totalDiscounts']
-
 
     @property
     def invoices_count(self):
@@ -138,7 +124,6 @@ class CurrencyMetrics(object):
         '''
         return self.__data['invoicesCount']
 
-
     @property
     def items(self):
         '''
@@ -146,7 +131,6 @@ class CurrencyMetrics(object):
         @return: float
         '''
         return self.__data['items']
-
 
     @property
     def taxes(self):
@@ -156,7 +140,6 @@ class CurrencyMetrics(object):
         '''
         return [Treatment(i) for i in self.__data['taxes']]
 
-
     @property
     def discounts(self):
         '''
@@ -164,8 +147,6 @@ class CurrencyMetrics(object):
         @return: list
         '''
         return [Treatment(i) for i in self.__data['discounts']]
-
-
 
 
 class Treatment(object):
@@ -179,7 +160,6 @@ class Treatment(object):
         '''
         self.__data = data
 
-
     @property
     def type(self):
         '''
@@ -188,7 +168,6 @@ class Treatment(object):
         '''
         return self.__data['type']
 
-
     @property
     def value(self):
         '''
@@ -196,7 +175,6 @@ class Treatment(object):
         @return: float
         '''
         return self.__data['value']
-
 
     @property
     def name(self):
