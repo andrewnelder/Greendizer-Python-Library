@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
+import logging
 from datetime import timedelta
 from greendizer.helpers import Address
 from greendizer.base import (is_empty_or_none, extract_id_from_uri,
-                             to_byte_string)
-from greendizer.http import Request
+                             to_byte_string, size_in_bytes)
+from greendizer.http import Request, MultipartRequest, MultipartRequestPart
 from greendizer.dal import Resource, Node
-from greendizer.xmli import XMLiBuilder
 from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
                                   MessageBase, InvoiceNodeBase, AnalyticsBase,
                                   ThreadNodeBase, MessageNodeBase, DailyDigest,
                                   HourlyDigest, TimespanDigestNode)
 
 
-MAX_CONTENT_LENGTH = 500*1024  # 500kb
+XMLI_MIMETYPE = 'application/xmli+xml'
+DISABLE_NOTIFICATION_HEADER = 'X-GD-DISABLE-NOTIFICATION'
+MAX_INVOICES_PER_REQUEST = 100
+MAX_INVOICE_CONTENT_LENGTH = 5*1024  # 500kb
 
 
 class ResourceNotFoundException(Exception):
@@ -145,77 +148,47 @@ class InvoiceNode(InvoiceNodeBase):
                                             "custom_id " + custom_id)
 
         return collection[0]
-
-
-    def __builder_to_str(self, builder, signature=True):
-        '''
-        Turns an XMLiBuilder instance into a string, adding a digital signature
-        if required.
-        @param builder:XMLiBuilder instance
-        @param signature:bool A value indicating whether to digitally sign the
-        invoices or not.
-        @return: str
-        '''
-        if not issubclass(builder, XMLiBuilder):
-            raise ValueError('Expecting an XMLiBuilder instance.')
-
-        #XMLdsig: requires PyCrypto + lxml
-        private_key, public_key = self.email.client.keys
-        if signature and private_key and public_key:
-            from greendizer import xmldsig
-
-            #Divide the elements into XMLDSig chunks.
-            chunks = []
-            for invoice in builder.invoices:
-                new_builder = XMLiBuilder(self.email.user.client)
-                new_builder.invoices.append(invoice)
-                chunks.append(xmldsig.sign(to_byte_string(new_builder.to_xml()),
-                                           private_key,
-                                           public_key))
-
-            return ''.join(chunks)
-
-        return to_byte_string(builder)
-
-
-    def validate_xmli_builder(self, builder, signature=True):
-        '''
-        Verifies an XMLiBuilder instance or an XMLi string,
-        and raises an exception if its content is believed to be invalid.
-        @raise ValueError: Raised in case the XMLi size is beyond the limit.
-        @return: bool 
-        '''
-        data = (self.__builder_to_str(builder, signature) if
-                issubclass(builder, XMLiBuilder) else
-                to_byte_string(builder))
-
-        size = 0
-        try:
-            from os import sys
-            size = sys.getsizeof(data)
-        except AttributeError:
-            import base64 #2.5 and older...
-            size = len(base64.encodestring(data)) #1 ASCII = 1 byte
-
-        if size > MAX_CONTENT_LENGTH:
-            raise ValueError("XMLi's size is limited to %skb."
-                             % MAX_CONTENT_LENGTH / 1024)
-
-        return True
-
-
-    def send(self, builder, signature=True):
+    
+    def send(self, invoices, signature=True):
         '''
         Sends an invoice
         @param xmli:str Invoice XML representation.
         @return: InvoiceReport
         '''
-        data = self.__builder_to_str(builder, signature)
-        self.validate_xmli_builder(data)
+        if len(invoices) > MAX_INVOICES_PER_REQUEST:
+            raise ValueError('A request can only a maximum of %d invoices' %
+                             MAX_INVOICES_PER_REQUEST)
+        
+        private_key, public_key = self.email.client.keys
+        enable_signature = signature and private_key and public_key
+        
+        if enable_signature != signature:
+            logging.warn('Missing private and/or public key. Invoices ' /
+                         'will not be signed.') 
 
-        request = Request(self.email.client, method="POST", data=data,
-                          uri=self._uri, content_type="application/xml")
-
+        parts = []
+        for invoice in invoices:
+            invoice.seller.name = self.email.user.company.name
+            invoice.seller.email = self.email.id
+            invoice.seller.address = self.email.user.company.address
+            invoice.legal_mentions = (invoice.legal_mentions or
+                                      self.email.user.company.legal_mentions)
+            
+            data = (invoice.to_signed_str(private_key, public_key) 
+                    if enable_signature else invoice.to_string())
+            
+            if size_in_bytes(data) > MAX_CONTENT_LENGTH:
+                raise Exception('An invoice cannot be more than %dkb.' %
+                                MAX_INVOICE_CONTENT_LENGTH)
+            
+            part = MultipartRequestPart(content_type=XMLI_MIMETYPE, data=data)
+            if invoice.disable_notification != None:
+                part.headers.update({DISABLE_NOTIFICATION_HEADER:
+                                     invoice.disable_notification})
+            
+            parts.append(part)
+            
+        request = MutlipartRequest(self.email.client, self._uri, parts)
         response = request.get_response()
         if response.status_code == 202:  # Accepted
             return InvoiceReport(self.email,
