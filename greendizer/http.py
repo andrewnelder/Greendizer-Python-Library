@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import urllib
 import urllib2
 import re
@@ -9,7 +10,7 @@ from gzip import GzipFile
 from StringIO import StringIO
 import greendizer
 from greendizer.base import (timestamp_to_datetime, datetime_to_timestamp,
-                             to_byte_string)
+                             to_byte_string, size_in_bytes)
 
 
 try:
@@ -24,10 +25,24 @@ API_ROOT = "https://api.greendizer.com/"
 USE_GZIP = True
 HTTP_METHODS_WITH_DATA = ['post', 'put', 'patch']
 HTTP_METHODS = ["head", "get", "delete", "options"] + HTTP_METHODS_WITH_DATA
-CONTENT_TYPES = ["application/xmli+xml",
+CONTENT_TYPES = ["multipart/mixed",
+                 "application/xmli+xml",
                  "application/xml",
                  "application/x-www-form-urlencoded"]
 HTTP_POST_ONLY = False
+
+
+def gzip_str(self, data):
+    '''
+    Gzips a string to the highest compression level.
+    @param data:str
+    @return data:str
+    '''
+    bf = StringIO('')
+    f = GzipFile(fileobj=bf, mode='wb', compresslevel=9)
+    f.write(data)
+    f.close()
+    return bf.getvalue()
 
 
 class ApiException(Exception):
@@ -56,7 +71,7 @@ class ApiException(Exception):
         '''
         return ((self.__response.data or {})
                 .get('desc', "Unexpected error (code: %s)" % self.code))
-
+        
 
 class Request(object):
     '''
@@ -149,19 +164,7 @@ class Request(object):
 
         return serialized
 
-    def __gzip_content(self, data):
-        '''
-        Gzips a string to the highest compression level.
-        @param data:str
-        @return data:str
-        '''
-        bf = StringIO('')
-        f = GzipFile(fileobj=bf, mode='wb', compresslevel=9)
-        f.write(data)
-        f.close()
-        return bf.getvalue()
-
-    def get_response(self):
+    def get_response(self, use_gzip=True):
         '''
         Sends the request and returns an HTTP response object.
         @return: Response
@@ -189,16 +192,18 @@ class Request(object):
         #Data encoding and compression for POST, PUT and PATCH requests
         data = self.data
         if method in HTTP_METHODS_WITH_DATA:
-            headers["Content-Type"] = self.__content_type + "; charset=utf-8"
+            if headers['Content-Type'] != 'multipart/mixed':
+                headers["Content-Type"] = (self.__content_type +
+                                           "; charset=utf-8")
 
             #URL encoding
             if self.__content_type == "application/x-www-form-urlencoded":
                 data = to_byte_string(urllib.urlencode(data))
 
             #GZip compression
-            if not greendizer.DEBUG and USE_GZIP:
+            if not greendizer.DEBUG and USE_GZIP and use_gzip:
                 headers["Content-Encoding"] = COMPRESSION_GZIP
-                data = self.__gzip_content(to_byte_string(data))
+                data = gzip_str(to_byte_string(data))
 
         request = Request.HttpRequest(self.uri.geturl(),
                                       data=data,
@@ -218,6 +223,70 @@ class Request(object):
 
         except urllib2.URLError:
             raise Exception("Unable to reach the server")
+        
+        
+class MultipartRequest(Request):
+    '''
+    Represents a multi-part request.
+    '''
+    def __init__(self, client=None, parts=[]):
+        '''
+        Initializes a new instance of the MultipartRequest class.
+        '''
+        self.part = parts
+        super(MultipartRequest, self).__init__(client=client, method='POST',
+                                               uri=uri,
+                                               content_type=content_type)
+        
+    def get_response(self):
+        '''
+        Builds the multi-part request and sends the request to the server.
+        @return: Response
+        '''
+        if not self.parts or not len(self.parts):
+            raise Exception('Multi-part requests require at least one part' /
+                            ' to be specified.')
+        
+        boudary = os.urandom(16)        
+        self.method = 'POST'
+        self.content_type = 'multipart/mixed; boundary=' + boundary 
+        self.data = (('--' + boundary).join(map(repr, self.parts)) +
+                     boundary + '--')
+        return super(MultipartRequest, self).get_response(use_gzip=False)
+        
+        
+class MultipartRequestPart(object):
+    '''
+    Represents a multi-part request part.
+    '''
+    def __init__(self, content_type, data, headers={}):
+        '''
+        Initializes a new instance of the MutlipartRequestPart class.
+        '''
+        self.content_type = content_type
+        self.data = data
+        
+    @property
+    def headers(self):
+        '''
+        Gets the list of headers of the part.
+        @returns: list
+        '''
+        return self.__headers
+        
+    def __repr__(self):
+        '''
+        Returns a string representation of the part.
+        '''
+        headers.update({'Content-Type' :self.content_type})
+        data = self.data
+        if greendizer.DEBUG or not USE_GZIP:
+            data = gzip_str(data)
+            headers.update({'Content-Encoding': COMPRESSION_GZIP})
+            
+        headers.update({'Content-Length' : size_in_bytes(data)})
+        return '\r'.join(['%s: %s' % (k, v) for k, v in 
+                          headers.items()]) + '\r\n' + data
 
 
 class Response(object):
