@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import hashlib
 from datetime import date
-from greendizer.base import extract_id_from_uri
+from greendizer.helpers import CurrencyMetrics
+from greendizer.base import (is_empty_or_none, extract_id_from_uri,
+                             timestamp_to_datetime)
 from greendizer.dal import Resource, Node
 from greendizer.http import Request
 
@@ -609,7 +611,9 @@ class ThreadNodeBase(Node):
         if not message:
             raise ValueError("Invalid message")
 
-        data = {"recipient": recipient_id, "subject": subject, "message": message}
+        data = {"recipient": recipient_id,
+                "subject": subject,
+                "message": message}
         request = Request(self.__seller.client, method="POST",
                           uri=self.get_uri(), data=data)
 
@@ -683,7 +687,7 @@ class MessageNodeBase(Node):
                                               resource_cls)
 
 
-class HistoryBase(Resource):
+class AnalyticsBase(Resource):
     '''
     Represents a resource holding a history for different currencies.
     '''
@@ -693,15 +697,46 @@ class HistoryBase(Resource):
         @param currency_code:str 3 letters ISO Currency code.
         @return: dict
         '''
-        return self.get_currency_stats(currency_code)
+        return self.get_currency_metrics(currency_code)
 
-    def get_currency_stats(self, currency_code):
+    def get_currency_metrics(self, currency_code):
         '''
         Gets stats about the exchanges made with a specific currency.
         @param currency_code:str 3 letters ISO Currency code.
         @return: dict
         '''
-        return self._get_attribute(currency_code.upper())
+        if currency_code not in self.available_currencies:
+            raise ValueError("Data is not available in " + currency_code)
+
+        return CurrencyMetrics(currency_code.upper(),
+                               self._get_attribute(currency_code.upper()))
+
+
+    @property
+    def available_currencies(self):
+        '''
+        Gets the list of currencies for which a digest is available.
+        @return: list
+        '''
+        return self._get_attribute('currencies')
+
+
+    @property
+    def name(self):
+        '''
+        Gets the name of the entity for which the current data has been digested.
+        @return: str
+        '''
+        return self._get_attribute('name')
+
+
+    @property
+    def email(self):
+        '''
+        Gets the email address for which the current data has been digested.
+        @return: str
+        '''
+        return self._get_attribute('email')
 
     @property
     def currencies(self):
@@ -719,18 +754,75 @@ class HistoryBase(Resource):
         '''
         return self._get_attribute("invoicesCount")
 
-    @property
-    def threads_count(self):
+
+class TimespanDigest(AnalyticsBase):
+    '''
+    Represents an analytics digest covering a specific time span.
+    '''
+    def __init__(self, entry, identifier):
         '''
-        Gets the number of threads opened.
-        @return: int
+        Initializes a new instance of the TimespanDigest class.
+        @param entry:AnalyticsBase Parent analytics object.
+        @param identifier:str ID of the object.
         '''
-        return self._get_attribute("threadsCount")
+        super(TimespanDigest, self).__init__(entry.client, identifier)
+        self._entry = entry
 
     @property
-    def messages_count(self):
+    def datetime(self):
         '''
-        Gets the number of messages exchanged.
-        @return: int
+        Gets the date and time covered by this digest.
+        @return: datetime 
         '''
-        return self._get_attribute("messagesCount")
+        return timestamp_to_datetime(self.id)
+
+
+class TimespanDigestNode(Node):
+    '''
+    Represents an API node giving access to messages.
+    '''
+    def __init__(self, entry, uri_suffix, resource_cls):
+        '''
+        Initializes a new instance of the MessageNode
+        @param thread: ThreadBase instance.
+        @param resource_cls: Class Message class.
+        '''
+        self.__entry = entry
+        super(TimespanDigestNode, self).__init__(entry.client,
+                                              entry.uri + uri_suffix + '/',
+                                              resource_cls)
+
+    def get(self, identifier, default=None, **kwargs):
+        '''
+        Gets a buyer by its ID.
+        @param identifier:ID of the buyer.
+        @return: Buyer
+        '''
+        return super(TimespanDigestNode, self).get(self.__entry, identifier,
+                                                   default=default, **kwargs)
+
+
+class DailyDigest(TimespanDigest):
+    '''
+    Represents daily spanning over a day.
+    '''
+    @property
+    def uri(self):
+        '''
+        Gets the URI
+        @return: str
+        '''
+        return self._entry.uri + 'days/' + self.id
+
+
+class HourlyDigest(TimespanDigest):
+    '''
+    Represents daily spanning over an hour.
+    '''
+    @property
+    def uri(self):
+        '''
+        Gets the URI
+        @return: str
+        '''
+        return self._entry.uri + 'hours/' + self.id

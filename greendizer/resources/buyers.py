@@ -2,8 +2,9 @@
 from greendizer.base import extract_id_from_uri
 from greendizer.dal import Node
 from greendizer.resources import (User, Company, EmailBase, ThreadBase,
-                                  InvoiceBase, HistoryBase, InvoiceNodeBase,
-                                  ThreadNodeBase, MessageNodeBase)
+                                  InvoiceBase, InvoiceNodeBase, AnalyticsBase,
+                                  ThreadNodeBase, MessageNodeBase,
+                                  TimespanDigestNode, HourlyDigest, DailyDigest)
 
 
 class Buyer(User):
@@ -215,7 +216,7 @@ class MessageNode(MessageNodeBase):
         super(MessageNode, self).__init__(thread)
 
 
-class Seller(HistoryBase):
+class Seller(AnalyticsBase):
     '''
     Represents a seller who has invoiced the currently authenticated user
     in the past.
@@ -228,6 +229,26 @@ class Seller(HistoryBase):
         '''
         self.__email = email
         super(Seller, self).__init__(email.client, identifier)
+        self.__days = TimespanDigestNode(self, 'days/', DailyDigest)
+        self.__hours = TimespanDigestNode(self, 'hours/', HourlyDigest)
+
+
+    @property
+    def days(self):
+        '''
+        Gets access to daily digests of analytics.
+        @return: Node
+        '''
+        return self.__days
+
+
+    @property
+    def hours(self):
+        '''
+        Gets access to hourly digests of analytics.
+        @return: Node
+        '''
+        return self.__hours
 
     @property
     def uri(self):

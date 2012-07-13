@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
 from datetime import timedelta
-from greendizer.base import (Address, extract_id_from_uri,
+from greendizer.helpers import Address
+from greendizer.base import (is_empty_or_none, extract_id_from_uri,
                              to_byte_string)
 from greendizer.http import Request
 from greendizer.dal import Resource, Node
-from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
-                                  MessageBase, HistoryBase, InvoiceNodeBase,
-                                  ThreadNodeBase, MessageNodeBase)
 from greendizer.xmli import XMLiBuilder
+from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
+                                  MessageBase, InvoiceNodeBase, AnalyticsBase,
+                                  ThreadNodeBase, MessageNodeBase, DailyDigest,
+                                  HourlyDigest, TimespanDigestNode)
 
 
-MAX_CONTENT_LENGTH = 512000  # 500kb
+MAX_CONTENT_LENGTH = 500*1024  # 500kb
 
 
 class ResourceNotFoundException(Exception):
@@ -246,7 +248,7 @@ class Invoice(InvoiceBase):
         Gets the buyer's name as specified on the invoice.
         @return: str
         '''
-        return (self._get_attribute("buyer") or {}).get("name", None)
+        return (self._get_attribute("buyer") or {}).get("name")
 
     @property
     def buyer_email(self):
@@ -254,7 +256,7 @@ class Invoice(InvoiceBase):
         Gets the buyer's name as specified on the invoice.
         @return: str
         '''
-        return (self._get_attribute("buyer") or {}).get("email", None)
+        return (self._get_attribute("buyer") or {}).get("email")
 
     @property
     def buyer_address(self):
@@ -262,7 +264,7 @@ class Invoice(InvoiceBase):
         Gets the delivery address of the buyer.
         @return: Address
         '''
-        address = (self._get_attribute("buyer") or {}).get("address", None)
+        address = (self._get_attribute("buyer") or {}).get("address")
         if not self.__buyer_address and address:
             self.__buyer_address = Address(address)
 
@@ -274,7 +276,7 @@ class Invoice(InvoiceBase):
         Gets the delivery address of the buyer.
         @return: Address
         '''
-        address = (self._get_attribute("buyer") or {}).get("delivery", None)
+        address = (self._get_attribute("buyer") or {}).get("delivery")
         if not self.__buyer_delivery_address and address:
             self.__buyer_delivery_address = Address(address)
 
@@ -286,7 +288,7 @@ class Invoice(InvoiceBase):
         Gets the buyer.
         @return: Buyer
         '''
-        buyer_uri = (self._get_attribute("buyer") or {}).get("uri", None)
+        buyer_uri = (self._get_attribute("buyer") or {}).get("uri")
         return self.client.seller.buyers[extract_id_from_uri(buyer_uri)]
 
     def cancel(self):
@@ -508,7 +510,9 @@ class BuyerNode(Node):
         @param seller:Seller Currently authenticated seller.
         '''
         self.__seller = seller
-        super(BuyerNode, self).__init__(seller, seller.uri + "buyers/", Buyer)
+        super(BuyerNode, self).__init__(seller.client,
+                                        seller.uri + "buyers/",
+                                        Buyer)
 
     def get(self, identifier, **kwargs):
         '''
@@ -519,7 +523,7 @@ class BuyerNode(Node):
         return super(BuyerNode, self).get(self.__seller, identifier, **kwargs)
 
 
-class Buyer(HistoryBase):
+class Buyer(AnalyticsBase):
     '''
     Represents a customer of the seller.
     '''
@@ -531,6 +535,26 @@ class Buyer(HistoryBase):
         self.__address = None
         self.__delivery_address = None
         super(Buyer, self).__init__(seller.client, identifier)
+        self.__days = TimespanDigestNode(self, 'days/', DailyDigest)
+        self.__hours = TimespanDigestNode(self, 'hours/', HourlyDigest)
+
+
+    @property
+    def days(self):
+        '''
+        Gets access to daily digests of analytics.
+        @return: Node
+        '''
+        return self.__days
+
+
+    @property
+    def hours(self):
+        '''
+        Gets access to hourly digests of analytics.
+        @return: Node
+        '''
+        return self.__hours
 
     @property
     def seller(self):
@@ -541,7 +565,7 @@ class Buyer(HistoryBase):
         return self.__seller
 
     @property
-    def address(self):
+    def billing_address(self):
         '''
         Gets the address of the buyer.
         @return: Address
