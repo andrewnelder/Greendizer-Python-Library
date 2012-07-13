@@ -149,15 +149,15 @@ class InvoiceNode(InvoiceNodeBase):
 
         return collection[0]
     
-    def send(self, invoices, signature=True):
+    def send(self, invoices=[], signature=True):
         '''
         Sends an invoice
-        @param xmli:str Invoice XML representation.
+        @param invoices:list List of invoices to send.
         @return: InvoiceReport
         '''
         if len(invoices) > MAX_INVOICES_PER_REQUEST:
-            raise ValueError('A request can only a maximum of %d invoices' %
-                             MAX_INVOICES_PER_REQUEST)
+            raise ValueError('A request can only carry a maximum of %d ' /
+                             'invoices' % MAX_INVOICES_PER_REQUEST)
         
         private_key, public_key = self.email.client.keys
         enable_signature = signature and private_key and public_key
