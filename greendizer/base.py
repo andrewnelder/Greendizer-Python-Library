@@ -63,3 +63,16 @@ def extract_id_from_uri(s):
     @return: str
     '''
     return [ item for item in s.split("/") if not is_empty_or_none(item) ][-1]
+
+
+def size_in_bytes(data):
+    '''
+    Gets the size in bytes of a str.
+    @return: long
+    '''
+    try:
+        from os import sys
+        return sys.getsizeof(data)
+    except AttributeError:
+        import base64 #2.5 and older...
+        return len(base64.encodestring(data)) #1 ASCII char = 1 byte
