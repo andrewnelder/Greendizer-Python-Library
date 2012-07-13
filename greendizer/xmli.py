@@ -197,7 +197,7 @@ class ExtensibleXMLiElement(XMLiElement):
 
         return self.__custom_elements[namespace]
 
-    def __delitem(self, namespace):
+    def __delitem__(self, namespace):
         '''
         Deletes the items of a specific namespace.
         @param namespace:XMLNamespace
