@@ -2,7 +2,7 @@
 import re
 import hashlib
 from datetime import date
-from greendizer.helpers import CurrencyMetrics
+from greendizer.helpers import CurrencyMetrics, Address
 from greendizer.base import (is_empty_or_none, extract_id_from_uri,
                              timestamp_to_datetime)
 from greendizer.dal import Resource, Node
@@ -188,6 +188,23 @@ class Company(Resource):
         @return: str
         '''
         return self._get_attribute("largeLogo")
+    
+    @property
+    def address(self):
+        '''
+        Gets the company's address.
+        @returns: Address
+        '''
+        return Address(self._get_attribute('address'), mutable=False)
+    
+    @property
+    def legal_mentions(self):
+        '''
+        Gets the mandatory legal mentions that should be added to every
+        invoice sent.
+        @returns: str
+        '''
+        return self._get_attribute('legalMentions')
 
 
 class Employer(Company):
