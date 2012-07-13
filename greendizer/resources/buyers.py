@@ -1,10 +1,9 @@
+# -*- coding: utf-8 -*-
 from greendizer.base import extract_id_from_uri
 from greendizer.dal import Node
 from greendizer.resources import (User, Company, EmailBase, ThreadBase,
                                   InvoiceBase, HistoryBase, InvoiceNodeBase,
                                   ThreadNodeBase, MessageNodeBase)
-
-
 
 
 class Buyer(User):
@@ -19,7 +18,6 @@ class Buyer(User):
         super(Buyer, self).__init__(client)
         self.__emailNode = EmailNode(self)
 
-
     @property
     def emails(self):
         '''
@@ -28,7 +26,6 @@ class Buyer(User):
         '''
         return self.__emailNode
 
-
     @property
     def uri(self):
         '''
@@ -36,8 +33,6 @@ class Buyer(User):
         @return: str
         '''
         return "buyers/me/"
-
-
 
 
 class Email(EmailBase):
@@ -56,7 +51,6 @@ class Email(EmailBase):
         self.__threadNode = ThreadNode(self)
         self.__sellerNode = SellerNode(self)
 
-
     @property
     def invoices(self):
         '''
@@ -64,7 +58,6 @@ class Email(EmailBase):
         @return: InvoiceNode
         '''
         return self.__invoiceNode
-
 
     @property
     def threads(self):
@@ -75,15 +68,12 @@ class Email(EmailBase):
         '''
         return self.__threadNode
 
-
     @property
     def sellers(self):
         '''
-        Gets the 
+        Gets the
         '''
         return self.__sellerNode
-
-
 
 
 class EmailNode(Node):
@@ -102,17 +92,13 @@ class EmailNode(Node):
         super(EmailNode, self).__init__(user.client, user.uri + "emails/",
                                         Email)
 
-
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an email address by its ID.
         @param identifier:str ID of the email address.
         @return: Email
         '''
-        return super(EmailNode, self).get(self.__user, identifier,
-                                          default=default, **kwargs)
-
-
+        return super(EmailNode, self).get(self.__user, identifier, **kwargs)
 
 
 class Invoice(InvoiceBase):
@@ -129,8 +115,6 @@ class Invoice(InvoiceBase):
         return Seller(self.email, seller_id)
 
 
-
-
 class InvoiceNode(InvoiceNodeBase):
     '''
     Represents an API node giving access to invoices sent to a specific email
@@ -144,18 +128,13 @@ class InvoiceNode(InvoiceNodeBase):
         self.__email = email
         super(InvoiceNode, self).__init__(email, Invoice)
 
-
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an invoice by its ID.
         @param identifier:str ID of the invoice.
         @return: Invoice
         '''
-        return super(InvoiceNode, self).get(self.__email, identifier,
-                                            default=default, **kwargs)
-
-
-
+        return super(InvoiceNode, self).get(self.__email, identifier, **kwargs)
 
 
 class Thread(ThreadBase):
@@ -172,7 +151,6 @@ class Thread(ThreadBase):
         super(Thread, self).__init__(email.client, identifier)
         self.__messageNode = MessageNode(self)
 
-
     @property
     def uri(self):
         '''
@@ -180,7 +158,6 @@ class Thread(ThreadBase):
         @return: str
         '''
         return "%sthreads/%s/" % (self.__email.uri, self.id)
-
 
     @property
     def seller(self):
@@ -191,7 +168,6 @@ class Thread(ThreadBase):
         seller_id = extract_id_from_uri(self._get_attribute("sellerURI"))
         return Seller(self.client, seller_id)
 
-
     @property
     def messages(self):
         '''
@@ -199,8 +175,6 @@ class Thread(ThreadBase):
         @return: MessageNode
         '''
         return self.__messageNode
-
-
 
 
 class ThreadNode(ThreadNodeBase):
@@ -217,17 +191,14 @@ class ThreadNode(ThreadNodeBase):
         super(ThreadNode, self).__init__(email.client, email.uri + "threads/",
                                          Thread)
 
-
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets a thread by its ID.
         @param identifier:str ID of the thread.
         @return: str
         '''
         return super(ThreadNode, self).get(self.__email, identifier,
-                                           default=default, **kwargs)
-
-
+                                           **kwargs)
 
 
 class MessageNode(MessageNodeBase):
@@ -244,8 +215,6 @@ class MessageNode(MessageNodeBase):
         super(MessageNode, self).__init__(thread)
 
 
-
-
 class Seller(HistoryBase):
     '''
     Represents a seller who has invoiced the currently authenticated user
@@ -260,7 +229,6 @@ class Seller(HistoryBase):
         self.__email = email
         super(Seller, self).__init__(email.client, identifier)
 
-
     @property
     def uri(self):
         '''
@@ -268,7 +236,6 @@ class Seller(HistoryBase):
         @return: str
         '''
         return "%ssellers/%s/" % (self.__email.uri, self.id)
-
 
     @property
     def email(self):
@@ -278,7 +245,6 @@ class Seller(HistoryBase):
         '''
         return self.__email
 
-
     @property
     def company(self):
         '''
@@ -287,8 +253,6 @@ class Seller(HistoryBase):
         '''
         company_id = extract_id_from_uri(self._get_attribute("companyURI"))
         return Company(self.__email, company_id)
-
-
 
 
 class SellerNode(Node):
@@ -306,16 +270,13 @@ class SellerNode(Node):
                                         email.uri + "sellers/",
                                         Seller)
 
-
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets the history of a specific seller
         @param identifier:str ID of the seller.
         @return: Seller
         '''
-        return super(SellerNode, self).get(self.__email, identifier,
-                                           default=default, **kwargs)
-
+        return super(SellerNode, self).get(self.__email, identifier, **kwargs)
 
     @property
     def email(self):
@@ -324,4 +285,3 @@ class SellerNode(Node):
         @return: Email
         '''
         return self.__email
-

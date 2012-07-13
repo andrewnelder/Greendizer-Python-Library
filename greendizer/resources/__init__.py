@@ -1,10 +1,9 @@
+# -*- coding: utf-8 -*-
 import hashlib
 from datetime import date
 from greendizer.base import extract_id_from_uri
 from greendizer.dal import Resource, Node
 from greendizer.http import Request
-
-
 
 
 class User(Resource):
@@ -19,7 +18,6 @@ class User(Resource):
         self.__company = Employer(self)
         self.__settings = Settings(self)
 
-
     @property
     def settings(self):
         '''
@@ -27,7 +25,6 @@ class User(Resource):
         @return: Settings
         '''
         return self.__settings
-
 
     @property
     def company(self):
@@ -37,7 +34,6 @@ class User(Resource):
         '''
         return self.__company
 
-
     @property
     def first_name(self):
         '''
@@ -45,7 +41,6 @@ class User(Resource):
         @return: str
         '''
         return self._get_attribute("firstname")
-
 
     @property
     def last_name(self):
@@ -55,7 +50,6 @@ class User(Resource):
         '''
         return self._get_attribute("lastname")
 
-
     @property
     def full_name(self):
         '''
@@ -63,7 +57,6 @@ class User(Resource):
         @return: str
         '''
         return "%s %s" % (self.first_name, self.last_name)
-
 
     @property
     def avatar_url(self):
@@ -73,7 +66,6 @@ class User(Resource):
         '''
         return self._get_attribute("avatar")
 
-
     @property
     def birthday(self):
         '''
@@ -81,8 +73,6 @@ class User(Resource):
         @return: date
         '''
         return self._get_date_attribute("birthday").date()
-
-
 
 
 class Settings(Resource):
@@ -97,7 +87,6 @@ class Settings(Resource):
         self.__user = user
         super(Settings, self).__init__(user.client)
 
-
     @property
     def uri(self):
         '''
@@ -105,7 +94,6 @@ class Settings(Resource):
         @return:str
         '''
         return self.__user.uri + "settings/"
-
 
     @property
     def language(self):
@@ -115,7 +103,6 @@ class Settings(Resource):
         '''
         return self._get_attribute("language")
 
-
     @property
     def region(self):
         '''
@@ -124,7 +111,6 @@ class Settings(Resource):
         '''
         return self._get_attribute("region")
 
-
     @property
     def currency(self):
         '''
@@ -132,8 +118,6 @@ class Settings(Resource):
         @return: str
         '''
         return self._get_attribute("currency")
-
-
 
 
 class Company(Resource):
@@ -148,7 +132,6 @@ class Company(Resource):
         '''
         return "/companies/%s/" + self.id
 
-
     @property
     def name(self):
         '''
@@ -156,7 +139,6 @@ class Company(Resource):
         @return: str
         '''
         return self._get_attribute("name")
-
 
     @property
     def description(self):
@@ -166,7 +148,6 @@ class Company(Resource):
         '''
         return self._get_attribute("description")
 
-
     @property
     def small_logo_url(self):
         '''
@@ -175,7 +156,6 @@ class Company(Resource):
         '''
         return self._get_attribute("smallLogo")
 
-
     @property
     def large_logo_url(self):
         '''
@@ -183,7 +163,6 @@ class Company(Resource):
         @return: str
         '''
         return self._get_attribute("largeLogo")
-
 
 
 class Employer(Company):
@@ -198,7 +177,6 @@ class Employer(Company):
         self.__user = user
         super(Employer, self).__init__(user.client)
 
-
     @property
     def uri(self):
         '''
@@ -206,7 +184,6 @@ class Employer(Company):
         @return: str
         '''
         return self.__user.uri + "company/"
-
 
 
 class EmailBase(Resource):
@@ -226,7 +203,6 @@ class EmailBase(Resource):
         self.__user = user
         self.__id = identifier
 
-
     @property
     def uri(self):
         '''
@@ -234,7 +210,6 @@ class EmailBase(Resource):
         @return: str
         '''
         return "%semails/%s/" % (self.__user.uri, self.id)
-
 
     @property
     def label(self):
@@ -244,7 +219,6 @@ class EmailBase(Resource):
         '''
         return self._get_attribute("label")
 
-
     @property
     def user(self):
         '''
@@ -252,8 +226,6 @@ class EmailBase(Resource):
         @return: User
         '''
         return self.__user
-
-
 
 
 class InvoiceBase(Resource):
@@ -270,7 +242,6 @@ class InvoiceBase(Resource):
         self.__email = email
         self.__id = identifier
 
-
     @property
     def email(self):
         '''
@@ -278,7 +249,6 @@ class InvoiceBase(Resource):
         @return:Email
         '''
         return self.__email
-
 
     @property
     def uri(self):
@@ -288,7 +258,6 @@ class InvoiceBase(Resource):
         '''
         return "%sinvoices/%s/" % (self.__email.uri, self.id)
 
-
     @property
     def name(self):
         '''
@@ -296,7 +265,6 @@ class InvoiceBase(Resource):
         @return: str
         '''
         return self._get_attribute("name")
-
 
     @property
     def description(self):
@@ -306,7 +274,6 @@ class InvoiceBase(Resource):
         '''
         return self._get_attribute("description")
 
-
     @property
     def total(self):
         '''
@@ -315,15 +282,13 @@ class InvoiceBase(Resource):
         '''
         return self._get_attribute("total")
 
-
     @property
     def body(self):
         '''
         Gets the body of the invoice.
-        @return: str 
+        @return: str
         '''
         return self._get_attribute("body")
-
 
     @property
     def currency(self):
@@ -333,7 +298,6 @@ class InvoiceBase(Resource):
         '''
         return self._get_attribute("currency")
 
-
     @property
     def date(self):
         '''
@@ -341,7 +305,6 @@ class InvoiceBase(Resource):
         @return: datetime
         '''
         return self._get_date_attribute("date")
-
 
     @property
     def due_date(self):
@@ -351,7 +314,6 @@ class InvoiceBase(Resource):
         '''
         return self._get_date_attribute("due_date")
 
-
     @property
     def secret_key(self):
         '''
@@ -360,14 +322,12 @@ class InvoiceBase(Resource):
         '''
         return self._get_attribute("secretKey")
 
-
     def __get_location(self):
         '''
         Gets a value indicating the location of the invoice.
         @return: int
         '''
         return self._get_attribute("location")
-
 
     def __set_location(self, value):
         '''
@@ -376,14 +336,12 @@ class InvoiceBase(Resource):
         '''
         self._register_update("location", value)
 
-
     def __get_read(self):
         '''
         Gets a value indicating whether the invoice has been read or not.
         @return: bool
         '''
         return self._get_attribute("read")
-
 
     def __set_read(self, value):
         '''
@@ -392,14 +350,12 @@ class InvoiceBase(Resource):
         '''
         self._register_update("read", value)
 
-
     def __get_flagged(self):
         '''
         Gets a value indicating whether the invoice has been flagged or not.
         @return: bool
         '''
         return self._get_attribute("flagged")
-
 
     def __set_flagged(self, value):
         '''
@@ -408,14 +364,12 @@ class InvoiceBase(Resource):
         '''
         self._register_update("flagged", value)
 
-
     def __get_paid(self):
         '''
         Gets a value indicating whether the invoice has been paid or not.
         @return: bool
         '''
         return self._get_attribute("paid")
-
 
     def __set_paid(self, value):
         '''
@@ -424,13 +378,10 @@ class InvoiceBase(Resource):
         '''
         self._register_update("paid", value)
 
-
     location = property(__get_location, __set_location)
     read = property(__get_read, __set_read)
     flagged = property(__get_flagged, __set_flagged)
     paid = property(__get_flagged, __set_flagged)
-
-
 
 
 class InvoiceNodeBase(Node):
@@ -448,16 +399,14 @@ class InvoiceNodeBase(Node):
                                               uri=email.uri + "invoices/",
                                               resource_cls=resource_cls)
 
-
-    def get(self, identifier, default=None, **kwargs):
+    def get(self, identifier, **kwargs):
         '''
         Gets an invoice using its ID.
         @param identifier:str ID of the invoice.
         @return: Invoice
         '''
         return super(InvoiceNodeBase, self).get(self.__email, identifier,
-                                                default=None, **kwargs)
-
+                                                **kwargs)
 
     @property
     def email(self):
@@ -467,7 +416,6 @@ class InvoiceNodeBase(Node):
         '''
         return self.__email
 
-
     @property
     def archived(self):
         '''
@@ -475,7 +423,6 @@ class InvoiceNodeBase(Node):
         @return: Collection
         '''
         return self.search("location==1")
-
 
     @property
     def trashed(self):
@@ -485,7 +432,6 @@ class InvoiceNodeBase(Node):
         '''
         return self.search("location==2")
 
-
     @property
     def unread(self):
         '''
@@ -493,7 +439,6 @@ class InvoiceNodeBase(Node):
         @return: Collection
         '''
         return self.search("read==0|location<<2")
-
 
     @property
     def flagged(self):
@@ -503,7 +448,6 @@ class InvoiceNodeBase(Node):
         '''
         return self.search("flagged==1|location<<2")
 
-
     @property
     def due(self):
         '''
@@ -511,7 +455,6 @@ class InvoiceNodeBase(Node):
         @return: Collection
         '''
         return self.search("paid==0|location<<2|canceled==0")
-
 
     @property
     def overdue(self):
@@ -521,8 +464,6 @@ class InvoiceNodeBase(Node):
         '''
         return self.search("paid==0|location<<2|canceled==0|dueDate>>"
                            + date.today().isoformat())
-
-
 
 
 class ThreadBase(Resource):
@@ -537,7 +478,6 @@ class ThreadBase(Resource):
         '''
         return self._get_attribute("count")
 
-
     @property
     def subject(self):
         '''
@@ -546,15 +486,13 @@ class ThreadBase(Resource):
         '''
         return self._get_attribute("subject")
 
-
     @property
     def snippet(self):
         '''
         Gets a snippet of the lastest message in the thread
-        @return: str 
+        @return: str
         '''
         return self._get_attribute("snippet")
-
 
     @property
     def lastMessageDate(self):
@@ -564,14 +502,12 @@ class ThreadBase(Resource):
         '''
         return self._get_date_attribute("lastMessage")
 
-
     def __get_location(self):
         '''
         Gets a value indicating the location of the thread.
         @return: int
         '''
         return self._get_attribute("location")
-
 
     def __set_location(self, value):
         '''
@@ -580,14 +516,12 @@ class ThreadBase(Resource):
         '''
         self._register_update("location", value)
 
-
     def __get_read(self):
         '''
         Gets a value indicating whether the thread has been read or not.
         @return: bool
         '''
         return self._get_attribute("read")
-
 
     def __set_read(self, value):
         '''
@@ -596,14 +530,12 @@ class ThreadBase(Resource):
         '''
         self._register_update("read", value)
 
-
     def __get_flagged(self):
         '''
         Gets a value indicating whether the thread has been flagged or not.
         @return: bool
         '''
         return self._get_attribute("flagged")
-
 
     def __set_flagged(self, value):
         '''
@@ -612,12 +544,9 @@ class ThreadBase(Resource):
         '''
         self._register_update("flagged", value)
 
-
     location = property(__get_location, __set_location)
     read = property(__get_read, __set_read)
     flagged = property(__get_flagged, __set_flagged)
-
-
 
 
 class ThreadNodeBase(Node):
@@ -632,7 +561,6 @@ class ThreadNodeBase(Node):
         '''
         return self.search("location==0")
 
-
     @property
     def archived(self):
         '''
@@ -640,7 +568,6 @@ class ThreadNodeBase(Node):
         @return: Collection
         '''
         return self.search("location==1")
-
 
     @property
     def trashed(self):
@@ -650,7 +577,6 @@ class ThreadNodeBase(Node):
         '''
         return self.search("location==2")
 
-
     @property
     def unread(self):
         '''
@@ -659,7 +585,6 @@ class ThreadNodeBase(Node):
         '''
         return self.search("read==0|location<<2")
 
-
     @property
     def flagged(self):
         '''
@@ -667,7 +592,6 @@ class ThreadNodeBase(Node):
         @return: Collection
         '''
         return self.search("flagged==1|location<<2")
-
 
     def open(self, recipient_id, subject, message):
         '''
@@ -685,7 +609,7 @@ class ThreadNodeBase(Node):
         if not message:
             raise ValueError("Invalid message")
 
-        data = {"recipient":recipient_id, "subject":subject, "message":message}
+        data = {"recipient": recipient_id, "subject": subject, "message": message}
         request = Request(self.__seller.client, method="POST",
                           uri=self.get_uri(), data=data)
 
@@ -695,8 +619,6 @@ class ThreadNodeBase(Node):
             thread = self[thread_id]
             thread.sync(response.data, response["Etag"])
             return thread
-
-
 
 
 class MessageBase(Resource):
@@ -712,7 +634,6 @@ class MessageBase(Resource):
         self.__thread = thread
         super(MessageBase, self).__init__(thread.client, identifier)
 
-
     @property
     def uri(self):
         '''
@@ -720,7 +641,6 @@ class MessageBase(Resource):
         @return: str
         '''
         return "%smessages/%s/" % (self.__thread.uri, self.id)
-
 
     @property
     def thread(self):
@@ -730,7 +650,6 @@ class MessageBase(Resource):
         '''
         return self.__thread
 
-
     @property
     def text(self):
         '''
@@ -738,7 +657,6 @@ class MessageBase(Resource):
         @return: str
         '''
         return self._get_attribute("text")
-
 
     @property
     def sender(self):
@@ -748,8 +666,6 @@ class MessageBase(Resource):
         @return: bool
         '''
         return self._get_attribute("sender") is not None
-
-
 
 
 class MessageNodeBase(Node):
@@ -767,7 +683,6 @@ class MessageNodeBase(Node):
                                               resource_cls)
 
 
-
 class HistoryBase(Resource):
     '''
     Represents a resource holding a history for different currencies.
@@ -780,7 +695,6 @@ class HistoryBase(Resource):
         '''
         return self.get_currency_stats(currency_code)
 
-
     def get_currency_stats(self, currency_code):
         '''
         Gets stats about the exchanges made with a specific currency.
@@ -788,7 +702,6 @@ class HistoryBase(Resource):
         @return: dict
         '''
         return self._get_attribute(currency_code.upper())
-
 
     @property
     def currencies(self):
@@ -798,7 +711,6 @@ class HistoryBase(Resource):
         '''
         return self._get_attribute("currencies")
 
-
     @property
     def invoices_count(self):
         '''
@@ -806,7 +718,6 @@ class HistoryBase(Resource):
         @return: int
         '''
         return self._get_attribute("invoicesCount")
-
 
     @property
     def threads_count(self):
@@ -816,7 +727,6 @@ class HistoryBase(Resource):
         '''
         return self._get_attribute("threadsCount")
 
-
     @property
     def messages_count(self):
         '''
@@ -824,6 +734,3 @@ class HistoryBase(Resource):
         @return: int
         '''
         return self._get_attribute("messagesCount")
-
-
-

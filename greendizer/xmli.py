@@ -1,19 +1,23 @@
+# -*- coding: utf-8 -*-
 import re
 from xml.dom.minidom import Document
-from StringIO import StringIO
 from datetime import datetime, date
 from decimal import Decimal, ROUND_DOWN
 from greendizer import VERSION
 from greendizer.base import is_valid_email, to_unicode, to_byte_string
 
 
-
+try:
+    from cStringIO import cStringIO as StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 
 XML_NAMESPACE_PATTERN = re.compile(r'^(?P<prefix>\w+):' \
                                    '(?P<uri>http(?:s)?:\/\/[a-z.-_]+)$')
 INFINITY = Decimal('inf')
 ZERO = Decimal(0)
-SIGNIFICANCE_EXPONENT = Decimal(10) ** -5 #0.00001
+SIGNIFICANCE_EXPONENT = Decimal(10) ** -5  # 0.00001
 MAX_LENGTH = 100
 VERSION = "2.0"
 AGENT = "Greendizer Pyzer Lib %s" % VERSION
@@ -68,8 +72,6 @@ COUNTRIES = ["AF", "AX", "AL", "DZ", "AS", "AD", "AO", "AI", "AQ", "AG", "AR",
              "ZM", "ZW"]
 
 
-
-
 def is_empty_or_none(s):
     '''
     Returns a value indicating whether the string is empty or none
@@ -85,8 +87,6 @@ def is_empty_or_none(s):
         return False
 
 
-
-
 def datetime_to_string(d):
     '''
     Gets a string representation of a datetime instance.
@@ -96,8 +96,6 @@ def datetime_to_string(d):
     return d.strftime("%Y-%m-%dT%H:%M:%S%z")
 
 
-
-
 def date_to_string(d):
     '''
     Gets a string representation of a datetime instance.
@@ -105,8 +103,6 @@ def date_to_string(d):
     @return:str
     '''
     return d.strftime("%Y-%m-%d%z")
-
-
 
 
 class XMLiElement(object):
@@ -143,7 +139,6 @@ class XMLiElement(object):
 
         return root.appendChild(tag)
 
-
     def to_xml(self):
         '''
         Returns a DOM element containing the XML representation of the XMLi
@@ -151,7 +146,6 @@ class XMLiElement(object):
         @return: Element
         '''
         raise NotImplementedError()
-
 
     def to_string(self, indent="", newl="", addindent=""):
         '''
@@ -163,14 +157,12 @@ class XMLiElement(object):
                                newl=newl)
         return buf.getvalue()
 
-
     def __str__(self):
         '''
         Returns a string representation of the XMLi element.
         @return: str
         '''
         return self.to_string()
-
 
     def __unicode__(self):
         '''
@@ -180,10 +172,9 @@ class XMLiElement(object):
         return to_unicode(self.to_string())
 
 
-
 class ExtensibleXMLiElement(XMLiElement):
     '''
-    Represents an XMLi element that can be extended with its own set of 
+    Represents an XMLi element that can be extended with its own set of
     custom tags.
     '''
     def __init__(self, **kwargs):
@@ -192,7 +183,6 @@ class ExtensibleXMLiElement(XMLiElement):
         '''
         super(ExtensibleXMLiElement, self).__init__(**kwargs)
         self.__custom_elements = {}
-
 
     def __getitem__(self, namespace):
         '''
@@ -209,8 +199,7 @@ class ExtensibleXMLiElement(XMLiElement):
 
         return self.__custom_elements[namespace]
 
-
-    def __delitem(self, namespace):
+    def __delitem__(self, namespace):
         '''
         Deletes the items of a specific namespace.
         @param namespace:XMLNamespace
@@ -218,7 +207,6 @@ class ExtensibleXMLiElement(XMLiElement):
         '''
         if namespace not in self.__custom_elements:
             del self.__custom_elements[namespace]
-
 
     def __createElementNS(self, root, uri, name, value):
         '''
@@ -232,7 +220,6 @@ class ExtensibleXMLiElement(XMLiElement):
         tag.appendChild(root.ownerDocument
                         .createCDATASection(to_byte_string(value)))
         return root.appendChild(tag)
-
 
     def to_xml(self, root):
         '''
@@ -254,8 +241,6 @@ class ExtensibleXMLiElement(XMLiElement):
         return root
 
 
-
-
 class Interval(object):
     '''
     Represents an line treatment base interval
@@ -269,7 +254,6 @@ class Interval(object):
         self.lower = Decimal(str(lower))
         self.upper = Decimal(str(upper))
 
-
     @property
     def amplitude(self):
         '''
@@ -277,7 +261,6 @@ class Interval(object):
         @return: Decimal
         '''
         return self.upper - self.lower
-
 
     def to_string(self):
         '''
@@ -287,7 +270,6 @@ class Interval(object):
         return "[%s,%s]" % (self.lower,
                             '' if self.upper != INFINITY else self.upper)
 
-
     def __str__(self):
         '''
         Returns an XMLi representation of the interval
@@ -295,15 +277,12 @@ class Interval(object):
         '''
         return self.to_string()
 
-
     def __unicode__(self):
         '''
         Returns a unicode string representation of the interval
         @return: unicode
         '''
         return to_unicode(self.to_string())
-
-
 
 
 class Address(XMLiElement):
@@ -329,7 +308,6 @@ class Address(XMLiElement):
         self.__country = None
         if country: self.country = country
 
-
     def __set_country(self, value):
         '''
         Sets the country
@@ -341,17 +319,15 @@ class Address(XMLiElement):
 
         self.__country = value
 
-
     country = property(lambda self: self.__country, __set_country)
-
 
     def to_xml(self, name="address"):
         '''
         Returns a DOM Element containing the XML representation of the
         address.
-        @return:Element 
+        @return:Element
         '''
-        for n, v in { "address":self.street_address, "city": self.city,
+        for n, v in {"address": self.street_address, "city": self.city,
                      "country": self.country}.items():
             if is_empty_or_none(v):
                 raise ValueError("'%s' attribute cannot be empty or None." % n)
@@ -364,8 +340,6 @@ class Address(XMLiElement):
         self._create_text_node(root, "state", self.state, True)
         self._create_text_node(root, "country", self.country)
         return root
-
-
 
 
 class Contact(XMLiElement):
@@ -387,7 +361,6 @@ class Contact(XMLiElement):
         if email: self.email = email
         self.address = address
 
-
     def __set_email(self, value):
         '''
         Sets the email address
@@ -398,9 +371,7 @@ class Contact(XMLiElement):
 
         self.__email = value
 
-
     email = property(lambda self: self.__email, __set_email)
-
 
     def to_xml(self, tag_name="buyer"):
         '''
@@ -408,7 +379,7 @@ class Contact(XMLiElement):
         @param tag_name:str Tag name
         @return: Element
         '''
-        for n, v in { "name":self.name, "address": self.address }.items():
+        for n, v in {"name": self.name, "address": self.address}.items():
             if is_empty_or_none(v):
                 raise ValueError("'%s' attribute cannot be empty or None." % n)
 
@@ -423,8 +394,6 @@ class Contact(XMLiElement):
         return root
 
 
-
-
 class Shipping(XMLiElement):
     '''
     Represents the shipping details of the invoice.
@@ -437,13 +406,12 @@ class Shipping(XMLiElement):
         super(Shipping, self).__init__()
         self.recipient = recipient
 
-
     def to_xml(self):
         '''
         Returns an XMLi representation of the shipping details.
         @return: Element
         '''
-        for n, v in { "recipient":self.recipient }.items():
+        for n, v in {"recipient": self.recipient}.items():
             if is_empty_or_none(v):
                 raise ValueError("'%s' attribute cannot be empty or None." % n)
 
@@ -451,8 +419,6 @@ class Shipping(XMLiElement):
         root = doc.createElement("shipping")
         root.appendChild(self.recipient.to_xml("recipient"))
         return root
-
-
 
 
 class XMLiBuilder(object):
@@ -467,7 +433,6 @@ class XMLiBuilder(object):
         self.__seller_client = seller_client
         self.__invoices = []
 
-
     @property
     def invoices(self):
         '''
@@ -475,7 +440,6 @@ class XMLiBuilder(object):
         @return:list
         '''
         return self.__invoices
-
 
     def to_xml(self, signed=False):
         '''
@@ -501,7 +465,6 @@ class XMLiBuilder(object):
 
         return doc
 
-
     def to_string(self, indent="", addindent="", newl=""):
         '''
         Returns a string representation of the XMLi element.
@@ -514,14 +477,12 @@ class XMLiBuilder(object):
         buf.close()
         return serialized
 
-
     def __str__(self):
         '''
         Returns a string representation of the XMLi
         @return: str
         '''
         return self.to_string()
-
 
     def __unicode__(self):
         '''
@@ -531,7 +492,6 @@ class XMLiBuilder(object):
         return to_unicode(self.to_string())
 
 
-
 class Invoice(ExtensibleXMLiElement):
     '''
     Represents an Invoice object in the XMLi.
@@ -539,11 +499,10 @@ class Invoice(ExtensibleXMLiElement):
     __date = None
     __due_date = None
 
-
     def __init__(self, name=None, description=None, currency=None,
                  status=INVOICE_PAID, date=date.today(), due_date=None,
                  custom_id=None, terms=None, seller=Contact(), buyer=Contact(),
-                 shipping=Shipping()):
+                 shipping=None):
         '''
         Initializes a new instance of the Invoice class.
         @param name:str Invoice name.
@@ -557,7 +516,7 @@ class Invoice(ExtensibleXMLiElement):
 
         self.seller = seller
         self.buyer = buyer
-        self.shipping = shipping
+        self.__shipping = shipping
         self.name = name
         self.description = description
         self.currency = currency
@@ -568,7 +527,6 @@ class Invoice(ExtensibleXMLiElement):
         self.terms = terms
         self.__groups = []
 
-
     @property
     def groups(self):
         '''
@@ -576,7 +534,14 @@ class Invoice(ExtensibleXMLiElement):
         @return: list
         '''
         return self.__groups
-
+    
+    def __get_shipping(self):
+        '''
+        Gets the shipping details of the invoice.
+        '''
+        if not self.__shipping:
+            self.__shipping = Shipping()
+        return self.__shipping
 
     def __set_name(self, value):
         '''
@@ -588,7 +553,6 @@ class Invoice(ExtensibleXMLiElement):
 
         self.__name = value
 
-
     def __set_status(self, value):
         '''
         Sets the status of the invoice.
@@ -598,7 +562,6 @@ class Invoice(ExtensibleXMLiElement):
             raise ValueError("Invalid invoice status")
 
         self.__status = value
-
 
     def __set_date(self, value):
         '''
@@ -613,7 +576,6 @@ class Invoice(ExtensibleXMLiElement):
 
         self.__date = value
 
-
     def __set_due_date(self, value):
         '''
         Sets the due date of the invoice.
@@ -623,7 +585,6 @@ class Invoice(ExtensibleXMLiElement):
             raise ValueError("Due date cannot be anterior to the invoice date.")
 
         self.__due_date = value
-
 
     def __set_currency(self, value):
         '''
@@ -635,7 +596,6 @@ class Invoice(ExtensibleXMLiElement):
 
         self.__currency = value
 
-
     @property
     def total_discounts(self):
         '''
@@ -643,7 +603,6 @@ class Invoice(ExtensibleXMLiElement):
         @return: Decimal
         '''
         return sum([group.total_discounts for group in self.__groups])
-
 
     @property
     def total_taxes(self):
@@ -653,7 +612,6 @@ class Invoice(ExtensibleXMLiElement):
         '''
         return sum([group.total_taxes for group in self.__groups])
 
-
     @property
     def total(self):
         '''
@@ -662,14 +620,13 @@ class Invoice(ExtensibleXMLiElement):
         '''
         return ((sum([group.total for group in self.__groups]) or Decimal(0))
                 .quantize(SIGNIFICANCE_EXPONENT, rounding=ROUND_DOWN))
-
-
+        
     name = property(lambda self: self.__name, __set_name)
     status = property(lambda self: self.__status, __set_status)
     currency = property(lambda self: self.__currency, __set_currency)
     date = property(lambda self: self.__date, __set_date)
     due_date = property(lambda self: self.__due_date, __set_due_date)
-
+    shipping = property(__get_shipping)
 
     def to_xml(self):
         '''
@@ -691,7 +648,7 @@ class Invoice(ExtensibleXMLiElement):
         root.appendChild(self.seller.to_xml("seller"))
         root.appendChild(self.buyer.to_xml("buyer"))
 
-        if self.shipping:
+        if self.__shipping:
             root.appendChild(self.shipping.to_xml())
 
         self._create_text_node(root, "name", self.name, True)
@@ -717,8 +674,6 @@ class Invoice(ExtensibleXMLiElement):
         return root
 
 
-
-
 class Group(ExtensibleXMLiElement):
     '''
     Represents a group of lines in the XMLi.
@@ -734,7 +689,6 @@ class Group(ExtensibleXMLiElement):
         self.description = description
         self.__lines = []
 
-
     @property
     def lines(self):
         '''
@@ -742,7 +696,6 @@ class Group(ExtensibleXMLiElement):
         @return: list
         '''
         return self.__lines
-
 
     @property
     def total_discounts(self):
@@ -752,7 +705,6 @@ class Group(ExtensibleXMLiElement):
         '''
         return sum([line.total_discounts for line in self.__lines])
 
-
     @property
     def total_taxes(self):
         '''
@@ -761,7 +713,6 @@ class Group(ExtensibleXMLiElement):
         '''
         return sum([line.total_taxes for line in self.__lines])
 
-
     @property
     def total(self):
         '''
@@ -769,7 +720,6 @@ class Group(ExtensibleXMLiElement):
         @return: Decimal
         '''
         return sum([line.total for line in self.__lines])
-
 
     def to_xml(self):
         '''
@@ -791,8 +741,6 @@ class Group(ExtensibleXMLiElement):
 
         super(Group, self).to_xml(root)
         return root
-
-
 
 
 class Line(ExtensibleXMLiElement):
@@ -819,7 +767,6 @@ class Line(ExtensibleXMLiElement):
         self.__taxes = []
         self.__discounts = []
 
-
     @property
     def discounts(self):
         '''
@@ -828,7 +775,6 @@ class Line(ExtensibleXMLiElement):
         '''
         return self.__discounts
 
-
     @property
     def taxes(self):
         '''
@@ -836,7 +782,6 @@ class Line(ExtensibleXMLiElement):
         @return: list
         '''
         return self.__taxes
-
 
     def __set_name(self, value):
         '''
@@ -848,7 +793,6 @@ class Line(ExtensibleXMLiElement):
 
         self.__name = value
 
-
     def __set_unit(self, value):
         '''
         Sets the unit of the line.
@@ -858,7 +802,6 @@ class Line(ExtensibleXMLiElement):
             value = value.upper()
 
         self.__unit = value
-
 
     def __set_quantity(self, value):
         '''
@@ -873,7 +816,6 @@ class Line(ExtensibleXMLiElement):
         except ValueError:
             raise ValueError("Quantity must be a positive number")
 
-
     def __set_unit_price(self, value):
         '''
         Sets the unit price
@@ -887,7 +829,6 @@ class Line(ExtensibleXMLiElement):
         except ValueError:
             raise ValueError("Unit Price must be a positive number")
 
-
     @property
     def gross(self):
         '''
@@ -896,16 +837,14 @@ class Line(ExtensibleXMLiElement):
         '''
         return self.unit_price * self.quantity
 
-
     @property
     def total_discounts(self):
         '''
         Gets the total amount of discounts applied to the current line.
         @return: Decimal
         '''
-        return min(self.gross, sum([ d.compute(self.gross)
-                                    for d in self.__discounts ]))
-
+        return min(self.gross, sum([d.compute(self.gross)
+                                    for d in self.__discounts]))
 
     @property
     def total_taxes(self):
@@ -914,8 +853,7 @@ class Line(ExtensibleXMLiElement):
         @return: Decimal
         '''
         base = self.gross - self.total_discounts
-        return sum([ t.compute(base) for t in self.__taxes ])
-
+        return sum([t.compute(base) for t in self.__taxes])
 
     @property
     def total(self):
@@ -925,20 +863,18 @@ class Line(ExtensibleXMLiElement):
         '''
         return self.gross + self.total_taxes - self.total_discounts
 
-
     name = property(lambda self: self.__name, __set_name)
     unit = property(lambda self: self.__unit, __set_unit)
     quantity = property(lambda self: self.__quantity, __set_quantity)
     unit_price = property(lambda self: self.__unit_price, __set_unit_price)
-
 
     def to_xml(self):
         '''
         Returns a DOM representation of the line.
         @return: Element
         '''
-        for n, v in { "name": self.name, "quantity": self.quantity,
-                     "unit_price":self.unit_price }.items():
+        for n, v in {"name": self.name, "quantity": self.quantity,
+                     "unit_price": self.unit_price}.items():
             if is_empty_or_none(v):
                 raise ValueError("'%s' attribute cannot be empty or None." % n)
 
@@ -971,8 +907,6 @@ class Line(ExtensibleXMLiElement):
         return root
 
 
-
-
 class Treatment(XMLiElement):
     '''
     Represents a line treatment.
@@ -993,7 +927,6 @@ class Treatment(XMLiElement):
         self.rate_type = rate_type
         self.__interval = interval
 
-
     def __set_interval(self, value):
         '''
         Sets the treatment interval
@@ -1003,7 +936,6 @@ class Treatment(XMLiElement):
             raise ValueError("'value' must be of type Interval")
 
         self.__interval = value
-
 
     def __set_name(self, value):
         '''
@@ -1015,7 +947,6 @@ class Treatment(XMLiElement):
 
         self.__name = value
 
-
     def __set_description(self, value):
         '''
         Sets the name of the treatment.
@@ -1025,7 +956,6 @@ class Treatment(XMLiElement):
             raise ValueError("Invalid description.")
 
         self.__description = value
-
 
     def __set_rate_type(self, value):
         '''
@@ -1037,7 +967,6 @@ class Treatment(XMLiElement):
 
         self.__rate_type = value
 
-
     def __set_rate(self, value):
         '''
         Sets the rate.
@@ -1048,13 +977,11 @@ class Treatment(XMLiElement):
         except:
             raise ValueError("invalid rate value.")
 
-
     name = property(lambda self: self.__name, __set_name)
     description = property(lambda self: self.__description, __set_description)
     rate_type = property(lambda self: self.__rate_type, __set_rate_type)
     interval = property(lambda self: self.__interval, __set_interval)
     rate = property(lambda self: self.__rate, __set_rate)
-
 
     def compute(self, base):
         '''
@@ -1080,16 +1007,15 @@ class Treatment(XMLiElement):
 
         return ZERO
 
-
     def to_xml(self, name):
         '''
         Returns a DOM representation of the line treatment.
         @return: Element
         '''
-        for n, v in { "rate_type": self.rate_type,
+        for n, v in {"rate_type": self.rate_type,
                      "rate": self.rate,
                      "name": self.name,
-                     "description":self.description }.items():
+                     "description": self.description}.items():
             if is_empty_or_none(v):
                 raise ValueError("'%s' attribute cannot be empty or None." % n)
 
@@ -1103,8 +1029,6 @@ class Treatment(XMLiElement):
         return root
 
 
-
-
 class Tax(Treatment):
     '''
     Represents a tax.
@@ -1116,15 +1040,12 @@ class Tax(Treatment):
         '''
         return super(Tax, self).to_xml("tax")
 
-
     def to_string(self, **kwargs):
         '''
         Returns a string representation of the tax.
         @return: str
         '''
         return super(Tax, self).to_string("tax", **kwargs)
-
-
 
 
 class Discount(Treatment):
@@ -1139,7 +1060,6 @@ class Discount(Treatment):
         '''
         return min(base, super(Discount, self).compute(base))
 
-
     def to_xml(self):
         '''
         Returns a DOM representation of the discount.
@@ -1147,11 +1067,9 @@ class Discount(Treatment):
         '''
         return super(Discount, self).to_xml("discount")
 
-
     def to_string(self, **kwargs):
         '''
         Returns a string representation of the discount.
         @return: str
         '''
         return super(Discount, self).to_string("discount", **kwargs)
-

@@ -1,15 +1,10 @@
-import os.path
+# -*- coding: utf-8 -*-
 import base64
 from greendizer.resources.buyers import Buyer
 from greendizer.resources.sellers import Seller
 
-
-
-
 DEBUG = False
 VERSION = "1.2.0"
-
-
 
 
 class Client(object):
@@ -33,7 +28,6 @@ class Client(object):
         self._access_token = access_token
         self._generate_authorization_header()
 
-
     @property
     def email_address(self):
         '''
@@ -42,7 +36,6 @@ class Client(object):
         '''
         return self._email
 
-
     @property
     def user(self):
         '''
@@ -50,7 +43,6 @@ class Client(object):
         @return: User
         '''
         return self._user
-
 
     def _generate_authorization_header(self):
         '''
@@ -66,7 +58,6 @@ class Client(object):
         else:
             self.__authorization_header = "BEARER " + self._access_token
 
-
     def sign_request(self, request):
         '''
         Signs a request to make it pass security.
@@ -75,8 +66,6 @@ class Client(object):
         '''
         request["Authorization"] = self.__authorization_header
         return request
-
-
 
 
 class BuyerClient(Client):
@@ -99,8 +88,6 @@ class BuyerClient(Client):
         return self.user
 
 
-
-
 class SellerClient(Client):
     '''
     Represents a seller oriented client of the Greendizer API
@@ -114,7 +101,6 @@ class SellerClient(Client):
         super(SellerClient, self).__init__(Seller(self), oauth_token, email,
                                            password)
 
-
     @property
     def keys(self):
         '''
@@ -127,7 +113,6 @@ class SellerClient(Client):
 
         return None, None
 
-
     @property
     def seller(self):
         '''
@@ -135,7 +120,6 @@ class SellerClient(Client):
         @return: Seller
         '''
         return self.user
-
 
     def import_keys(self, private, public, passphrase=None):
         '''
