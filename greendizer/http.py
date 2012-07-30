@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
 import urllib
 import urllib2
 import re
@@ -10,7 +9,7 @@ from gzip import GzipFile
 from StringIO import StringIO
 import greendizer
 from greendizer.base import (timestamp_to_datetime, datetime_to_timestamp,
-                             to_byte_string, size_in_bytes)
+                             to_byte_string)
 
 
 try:
@@ -25,8 +24,7 @@ API_ROOT = "https://api.greendizer.com/"
 USE_GZIP = True
 HTTP_METHODS_WITH_DATA = ['post', 'put', 'patch']
 HTTP_METHODS = ["head", "get", "delete", "options"] + HTTP_METHODS_WITH_DATA
-CONTENT_TYPES = ["multipart/mixed",
-                 "application/xmli+xml",
+CONTENT_TYPES = ["application/xmli+xml",
                  "application/xml",
                  "application/x-www-form-urlencoded"]
 HTTP_POST_ONLY = False
@@ -176,8 +174,7 @@ class Request(object):
         headers = self.__serialize_headers()
         headers.update({
             "Accept": "application/json",
-            "User-Agent": "Greendizer Python Library/%s" % (greendizer.VERSION,
-                                                            ),
+            "User-Agent": "Greendizer Python Library/" + greendizer.VERSION,
             "Accept-Encoding": "gzip, deflate",
             "Cache-Control": "no-cache"
         })
@@ -192,9 +189,7 @@ class Request(object):
         #Data encoding and compression for POST, PUT and PATCH requests
         data = self.data
         if method in HTTP_METHODS_WITH_DATA:
-            if headers['Content-Type'] != 'multipart/mixed':
-                headers["Content-Type"] = (self.__content_type +
-                                           "; charset=utf-8")
+            headers["Content-Type"] = self.__content_type + "; charset=utf-8"
 
             #URL encoding
             if self.__content_type == "application/x-www-form-urlencoded":
@@ -211,7 +206,9 @@ class Request(object):
 
         try:
             response = urllib2.urlopen(request)
-            return Response(self, 200, response.read(),
+            return Response(self,
+                            200,
+                            response.read(),
                             response.info())
 
         except(urllib2.HTTPError), e:
@@ -224,74 +221,10 @@ class Request(object):
         except urllib2.URLError:
             raise Exception("Unable to reach the server")
         
-        
-class MultipartRequest(Request):
-    '''
-    Represents a multi-part request.
-    '''
-    def __init__(self, client=None, parts=[]):
-        '''
-        Initializes a new instance of the MultipartRequest class.
-        '''
-        self.part = parts
-        super(MultipartRequest, self).__init__(client=client, method='POST',
-                                               uri=uri,
-                                               content_type=content_type)
-        
-    def get_response(self):
-        '''
-        Builds the multi-part request and sends the request to the server.
-        @return: Response
-        '''
-        if not self.parts or not len(self.parts):
-            raise Exception('Multi-part requests require at least one part' /
-                            ' to be specified.')
-        
-        boudary = os.urandom(16)        
-        self.method = 'POST'
-        self.content_type = 'multipart/mixed; boundary=' + boundary 
-        self.data = (('--' + boundary).join(map(repr, self.parts)) +
-                     boundary + '--')
-        return super(MultipartRequest, self).get_response(use_gzip=False)
-        
-        
-class MultipartRequestPart(object):
-    '''
-    Represents a multi-part request part.
-    '''
-    def __init__(self, content_type, data, headers={}):
-        '''
-        Initializes a new instance of the MutlipartRequestPart class.
-        '''
-        self.content_type = content_type
-        self.data = data
-        
-    @property
-    def headers(self):
-        '''
-        Gets the list of headers of the part.
-        @returns: list
-        '''
-        return self.__headers
-        
-    def __repr__(self):
-        '''
-        Returns a string representation of the part.
-        '''
-        headers.update({'Content-Type' :self.content_type})
-        data = self.data
-        if greendizer.DEBUG or not USE_GZIP:
-            data = gzip_str(data)
-            headers.update({'Content-Encoding': COMPRESSION_GZIP})
-            
-        headers.update({'Content-Length' : size_in_bytes(data)})
-        return '\r'.join(['%s: %s' % (k, v) for k, v in 
-                          headers.items()]) + '\r\n' + data
-
 
 class Response(object):
     '''
-    Represents an HTTP response to a greendizer API Request
+    Represents an HTTP response to a Greendizer API Request
     '''
     def __init__(self, request, status_code, data, info):
         '''
@@ -304,7 +237,7 @@ class Response(object):
         self.__request = request
         self.__status_code = status_code
 
-        content_encoding = info.getheader("Content-Encoding", None)
+        content_encoding = info.getheader("Content-Encoding")
         if content_encoding == COMPRESSION_DEFLATE:
             data = zlib.decompress(data)
         elif content_encoding == COMPRESSION_GZIP:
@@ -327,30 +260,31 @@ class Response(object):
         @param name:str Header name
         @return: object
         '''
-        header = name.lower()
-        if(header in ["date", "last-modified"]
-           and self.__info.getheader(header, None)):
-            value = self.__info.getheader(header)
+        header, value = name.lower(), self.__info.getheader(name, None)
+        if not value:
+            return
+        
+        if header in ["date", "last-modified"]:
             if "GMT" in value:
                 #RFC1122
                 return datetime.strptime(value, "%a, %d %b %Y %H:%M:%S GMT")
-            else:
-                '''
-                WARNING:
-                The HTTP protocol requires dates to be UTC.
-                The parsing of ISO8601 is made assuming there's no
-                time zone info in the string.
-                '''
-                #ISO8601
-                return datetime(*map(int, re.split('[^\d]', value)[:-1]))
+            
+            #ISO8601
+            '''
+            WARNING:
+            The HTTP protocol requires dates to be UTC.
+            The parsing of ISO8601 is made assuming there's no
+            time zone info in the string.
+            '''
+            return datetime(*map(int, re.split('[^\d]', value)[:-1]))
 
         if header == "etag":
-            return Etag.parse(self.__info.getheader(header, None))
+            return Etag.parse(value)
 
         if header == "content-range":
-            return ContentRange.parse(self.__info.getheader(header, None))
+            return ContentRange.parse(value)
 
-        return self.__info.getheader(header, None)
+        return value
 
     @property
     def status_code(self):
@@ -377,8 +311,8 @@ class Response(object):
         try:
             return json.loads(self.__data)
         except:
-            if greendizer.DEBUG:
-                print self.__data
+            raise ValueError('Unable to parse the response received:\n' +
+                             self.__data)
 
 
 class Etag(object):
@@ -433,7 +367,7 @@ class Etag(object):
         @return: Etag
         '''
         if not raw or len(raw) == 0:
-            return
+            raise ValueError('Invalid ETag value \'%s\'.' % raw)
 
         timestamp, identifier = raw.split("-")
         return cls(timestamp_to_datetime(timestamp), identifier)
@@ -451,8 +385,8 @@ class Range(object):
         @param limit:int Number of elements to include.
         '''
         self.unit = unit
-        self.offset = offset
-        self.limit = limit
+        self.offset = int(offset)
+        self.limit = int(limit)
 
     def __str__(self):
         '''
@@ -466,8 +400,8 @@ class ContentRange(object):
     '''
     Represents an HTTP Content-Range
     '''
-    REG_EXP = r'''^(?P<unit>\w+)(?:[ ]|=)(?P<offset>\d+)-(?P<last>\d+)
-                \/(?P<total>\d+)$'''
+    REG_EXP = r'^(?P<unit>\w+)(?:[ ]|=)(?P<offset>\d+)-(?P<last>\d+)' \
+                '\/(?P<total>\d+)$'
 
     def __init__(self, unit, offset, limit, total):
         '''
@@ -522,7 +456,7 @@ class ContentRange(object):
         @return: ContentRange
         '''
         if not raw:
-            return
+            raise ValueError('Invalid Content-Range value \'%s\'' % raw)
 
         match = re.match(cls.REG_EXP, raw)
         if not match or len(match.groupdict()) < 4:

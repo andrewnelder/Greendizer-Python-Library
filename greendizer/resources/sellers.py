@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
 import logging
-from datetime import timedelta
 from greendizer.helpers import Address
-from greendizer.base import (is_empty_or_none, extract_id_from_uri,
-                             to_byte_string, size_in_bytes)
-from greendizer.http import Request, MultipartRequest, MultipartRequestPart
-from greendizer.dal import Resource, Node
-from greendizer.resources import (User, EmailBase, InvoiceBase, ThreadBase,
-                                  MessageBase, InvoiceNodeBase, AnalyticsBase,
-                                  ThreadNodeBase, MessageNodeBase, DailyDigest,
+from greendizer.base import (extract_id_from_uri, size_in_bytes)
+from greendizer.http import Request
+from greendizer.dal import Node
+from greendizer.resources import (User, EmailBase, InvoiceBase,
+                                  InvoiceNodeBase, AnalyticsBase, DailyDigest,
                                   HourlyDigest, TimespanDigestNode)
 
 
 XMLI_MIMETYPE = 'application/xmli+xml'
 DISABLE_NOTIFICATION_HEADER = 'X-GD-DISABLE-NOTIFICATION'
-MAX_INVOICES_PER_REQUEST = 100
-MAX_INVOICE_CONTENT_LENGTH = 5*1024  # 500kb
+MAX_INVOICE_CONTENT_LENGTH = 5*1024  # 5kb
 
 
 class ResourceNotFoundException(Exception):
@@ -34,7 +30,6 @@ class Seller(User):
         Initializes a new instance of the Seller class.
         '''
         super(Seller, self).__init__(client)
-        self.__threadNode = ThreadNode(self)
         self.__emailNode = EmailNode(self)
         self.__buyerNode = BuyerNode(self)
 
@@ -53,14 +48,6 @@ class Seller(User):
         @return: EmailNode
         '''
         return self.__emailNode
-
-    @property
-    def threads(self):
-        '''
-        Gets access to the conversation threads.
-        @return: ThreadNode
-        '''
-        return self.__threadNode
 
     @property
     def buyers(self):
@@ -149,50 +136,51 @@ class InvoiceNode(InvoiceNodeBase):
 
         return collection[0]
     
-    def send(self, invoices=[], signature=True):
+    def send(self, invoice, signature=True):
         '''
         Sends an invoice
         @param invoices:list List of invoices to send.
         @return: InvoiceReport
         '''
-        if len(invoices) > MAX_INVOICES_PER_REQUEST:
-            raise ValueError('A request can only carry a maximum of %d ' /
-                             'invoices' % MAX_INVOICES_PER_REQUEST)
+        from pyxmli import Invoice as XMLiInvoice
+        if not issubclass(invoice.__class__, XMLiInvoice):
+            raise ValueError('\'invoice\' is not an instance of ' /
+                             'greendizer.xmli.Invoice or one of its ' /
+                             'subclasses.')
         
         private_key, public_key = self.email.client.keys
         enable_signature = signature and private_key and public_key
-        
         if enable_signature != signature:
             logging.warn('Missing private and/or public key. Invoices ' /
                          'will not be signed.') 
 
-        parts = []
-        for invoice in invoices:
-            invoice.seller.name = self.email.user.company.name
-            invoice.seller.email = self.email.id
-            invoice.seller.address = self.email.user.company.address
-            invoice.legal_mentions = (invoice.legal_mentions or
-                                      self.email.user.company.legal_mentions)
+        invoice.seller.name = self.email.user.company.name
+        invoice.seller.email = self.email.id
+        invoice.seller.address = self.email.user.company.address
+        invoice.legal_mentions = (invoice.legal_mentions or
+                                  self.email.user.company.legal_mentions)
             
-            data = (invoice.to_signed_str(private_key, public_key) 
-                    if enable_signature else invoice.to_string())
+        data = (invoice.to_signed_str(private_key, public_key) 
+                if enable_signature else invoice.to_string())
             
-            if size_in_bytes(data) > MAX_CONTENT_LENGTH:
-                raise Exception('An invoice cannot be more than %dkb.' %
-                                MAX_INVOICE_CONTENT_LENGTH)
+        if size_in_bytes(data) > MAX_INVOICE_CONTENT_LENGTH:
+            raise Exception('An invoice cannot be more than %dkb.' %
+                            MAX_INVOICE_CONTENT_LENGTH)
+        
+        request = Request(client=self.email.client,
+                          method='POST',
+                          uri=self._uri,
+                          data=data,
+                          content_type=XMLI_MIMETYPE, )
+        
+        if invoice.disable_notification != None:
+            request[DISABLE_NOTIFICATION_HEADER] = invoice.disable_notification 
             
-            part = MultipartRequestPart(content_type=XMLI_MIMETYPE, data=data)
-            if invoice.disable_notification != None:
-                part.headers.update({DISABLE_NOTIFICATION_HEADER:
-                                     invoice.disable_notification})
-            
-            parts.append(part)
-            
-        request = MutlipartRequest(self.email.client, self._uri, parts)
         response = request.get_response()
-        if response.status_code == 202:  # Accepted
-            return InvoiceReport(self.email,
-                                 extract_id_from_uri(response["Location"]))
+        if response.status_code == 201:  #Created
+            new_invoice = self[extract_id_from_uri(response["Location"])]
+            new_invoice.sync(response.data, response["Etag"])
+            return new_invoice
 
 
 class Invoice(InvoiceBase):
@@ -270,207 +258,6 @@ class Invoice(InvoiceBase):
         '''
         self._register_update("canceled", True)
         self.update()
-
-
-class InvoiceReportNode(Node):
-    '''
-    Represents an API node giving access to invoice reports.
-    '''
-    def __init__(self, email):
-        '''
-        Initializes a new instance of the InvoiceReportNode class.
-        @param email:Email Email instance.
-        '''
-        self.__email = email
-        super(InvoiceReportNode, self).__init__(email.client,
-                                                email.uri + "invoices/reports/",
-                                                InvoiceReport)
-
-    def get(self, identifier, **kwargs):
-        '''
-        Gets an invoice report by its ID.
-        @param identifier:str ID of the invoice report.
-        @return: InvoiceReport
-        '''
-        return super(InvoiceReportNode, self).get(self.__email, identifier,
-                                                  **kwargs)
-
-
-class InvoiceReport(Resource):
-    '''
-    Represents an invoice delivery report.
-    '''
-    def __init__(self, email, identifier):
-        '''
-        Initializes a new instance of the InvoiceReport class.
-        @param email:Email Email instance.
-        @param identifier:str ID of the report.
-        '''
-        self.__email = email
-        super(InvoiceReport, self).__init__(email.client, identifier)
-
-    @property
-    def email(self):
-        '''
-        Email address from which the invoices were sent.
-        @return: Email
-        '''
-        return self.__email
-
-    @property
-    def uri(self):
-        '''
-        Returns the URI of the resource.
-        @return: str
-        '''
-        return "%sinvoices/reports/%s/" % (self.__email.uri, self.id)
-
-    @property
-    def state(self):
-        '''
-        Gets a value indicating the stage of processing.
-        @return: int
-        '''
-        return self._get_attribute("state") or 0
-
-    @property
-    def ip_address(self):
-        '''
-        Gets the IP Address of the machine which sent the request.
-        @return: str
-        '''
-        return self._get_attribute("ipAddress")
-
-    @property
-    def hash(self):
-        '''
-        Gets the computed hash of the invoices received.
-        @return: str
-        '''
-        return self._get_attribute("hash")
-
-    @property
-    def error(self):
-        '''
-        Gets a description of the error encountered if any.
-        @return: str
-        '''
-        return self._get_attribute("error")
-
-    @property
-    def start(self):
-        '''
-        Gets the date and time on which the processing started.
-        @return: datetime
-        '''
-        return self._get_date_attribute("startTime")
-
-    @property
-    def end(self):
-        '''
-        Gets the date and time on which the processing ended.
-        @return: datetime
-        '''
-        return (self.start
-                + timedelta(milliseconds=self._get_attribute("elapsedTime")))
-
-    @property
-    def invoices_count(self):
-        '''
-        Gets the number of invoices being processed.
-        @return: int
-        '''
-        return self._get_attribute("invoicesCount")
-
-
-class MessageNode(MessageNodeBase):
-    '''
-    Represents an API node giving access to messages.
-    '''
-    def __init__(self, thread):
-        '''
-        Initializes a new instance of the MessageNode class.
-        @param thread: Thread  Thread instance
-        '''
-        super(MessageNode, self).__init__(thread, Message)
-
-
-class Message(MessageBase):
-    '''
-    Represents a conversation thread message.
-    '''
-    @property
-    def buyer(self):
-        '''
-        Gets the buyer.
-        @return: Buyer
-        '''
-        if not self.is_from_current_user:
-            buyer_id = extract_id_from_uri(self._get_attribute("buyerURI"))
-            return self.thread.seller.buyers[buyer_id]
-
-
-class ThreadNode(ThreadNodeBase):
-    '''
-    Represents a node giving access to conversation threads from a seller's
-    perspective.
-    '''
-    def __init__(self, seller):
-        '''
-        Initializes a new instance of the SellersThreadNode class.
-        @param seller:Seller Current seller instance.
-        '''
-        self.__seller = seller
-        super(ThreadNode, self).__init__(seller.client,
-                                         seller.uri + "threads/",
-                                         Thread)
-
-    def get(self, identifier, **kwargs):
-        '''
-        Gets a thread by its ID.
-        @param identifier:str ID of the thread.
-        @return: Thread.
-        '''
-        return super(ThreadNode, self).get(self.__seller, identifier, **kwargs)
-
-    @property
-    def seller(self):
-        '''
-        Gets the current user
-        @return: Seller
-        '''
-        return self.__seller
-
-
-class Thread(ThreadBase):
-    '''
-    Represents a conversation thread.
-    '''
-    def __init__(self, seller, identifier):
-        '''
-        Initializes a new instance of the Thread class.
-        @param seller:Seller Seller instance.
-        @param identifier:str ID of the thread.
-        '''
-        self.__seller = seller
-        super(Thread, self).__init__(seller.client, identifier)
-        self.__messageNode = MessageNode(self)
-
-    @property
-    def uri(self):
-        '''
-        Returns the URI of the resource.
-        @return: str
-        '''
-        return "%sthreads/%s/" % (self.__seller.uri, self.id)
-
-    @property
-    def messages(self):
-        '''
-        Gets access to the messages of the thread.
-        @return: MessageNode
-        '''
-        return self.__messageNode
 
 
 class BuyerNode(Node):

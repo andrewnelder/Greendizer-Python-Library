@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 from greendizer.base import extract_id_from_uri
 from greendizer.dal import Node
-from greendizer.resources import (User, Company, EmailBase, ThreadBase,
+from greendizer.resources import (User, Company, EmailBase,
                                   InvoiceBase, InvoiceNodeBase, AnalyticsBase,
-                                  ThreadNodeBase, MessageNodeBase,
                                   TimespanDigestNode, HourlyDigest, DailyDigest)
 
 
@@ -49,7 +48,6 @@ class Email(EmailBase):
         self.__user = user
         super(Email, self).__init__(user, identifier)
         self.__invoiceNode = InvoiceNodeBase(self)
-        self.__threadNode = ThreadNode(self)
         self.__sellerNode = SellerNode(self)
 
     @property
@@ -59,15 +57,6 @@ class Email(EmailBase):
         @return: InvoiceNode
         '''
         return self.__invoiceNode
-
-    @property
-    def threads(self):
-        '''
-        Gets the node of conversation threads attached to the current email
-        address.
-        @return: ThreadNode
-        '''
-        return self.__threadNode
 
     @property
     def sellers(self):
@@ -136,84 +125,6 @@ class InvoiceNode(InvoiceNodeBase):
         @return: Invoice
         '''
         return super(InvoiceNode, self).get(self.__email, identifier, **kwargs)
-
-
-class Thread(ThreadBase):
-    '''
-    Represents a conversation thread from a buyer's perspective.
-    '''
-    def __init__(self, email, identifier):
-        '''
-        Initializes a new instance of the Thread class.
-        @param email:Email Parent email address.
-        @param identifier:str ID of the resource.
-        '''
-        self.__email = email
-        super(Thread, self).__init__(email.client, identifier)
-        self.__messageNode = MessageNode(self)
-
-    @property
-    def uri(self):
-        '''
-        Gets the URI of the conversation thread.
-        @return: str
-        '''
-        return "%sthreads/%s/" % (self.__email.uri, self.id)
-
-    @property
-    def seller(self):
-        '''
-        Gets the seller with which the thread was opened.
-        @return: Company
-        '''
-        seller_id = extract_id_from_uri(self._get_attribute("sellerURI"))
-        return Seller(self.client, seller_id)
-
-    @property
-    def messages(self):
-        '''
-        Gets access to the messages of the thread.
-        @return: MessageNode
-        '''
-        return self.__messageNode
-
-
-class ThreadNode(ThreadNodeBase):
-    '''
-    Represents an API node giving access to the conversation threads
-    attached to a specific email address.
-    '''
-    def __init__(self, email):
-        '''
-        Initializes a new instance of the ThreadNode class.
-        @param email:Email Parent email instance.
-        '''
-        self.__email = email
-        super(ThreadNode, self).__init__(email.client, email.uri + "threads/",
-                                         Thread)
-
-    def get(self, identifier, **kwargs):
-        '''
-        Gets a thread by its ID.
-        @param identifier:str ID of the thread.
-        @return: str
-        '''
-        return super(ThreadNode, self).get(self.__email, identifier,
-                                           **kwargs)
-
-
-class MessageNode(MessageNodeBase):
-    '''
-    Represents an API node giving access to the messages contained in a
-    conversation thread.
-    '''
-    def __init__(self, thread):
-        '''
-        Initializes a new instance of the MessageNode class.
-        @param thread:Thread Parent thread.
-        '''
-        self.__thread = thread
-        super(MessageNode, self).__init__(thread)
 
 
 class Seller(AnalyticsBase):

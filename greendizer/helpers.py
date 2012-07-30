@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from greendizer.xmli import CURRENCIES
+from pyxmli import CURRENCIES
 
 
 class Address(object):
