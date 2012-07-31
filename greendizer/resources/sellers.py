@@ -157,8 +157,8 @@ class InvoiceNode(InvoiceNodeBase):
         invoice.seller.name = self.email.user.company.name
         invoice.seller.email = self.email.id
         invoice.seller.address = self.email.user.company.address
-        invoice.legal_mentions = (invoice.legal_mentions or
-                                  self.email.user.company.legal_mentions)
+        invoice.mentions = (invoice.mentions or
+                            self.email.user.company.legal_mentions)
             
         data = (invoice.to_signed_str(private_key, public_key) 
                 if enable_signature else invoice.to_string())
