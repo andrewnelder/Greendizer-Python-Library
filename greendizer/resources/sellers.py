@@ -136,7 +136,7 @@ class InvoiceNode(InvoiceNodeBase):
 
         return collection[0]
     
-    def send(self, invoice, signature=True):
+    def send(self, invoice, signature=True, disable_notification=False):
         '''
         Sends an invoice
         @param invoices:list List of invoices to send.
@@ -173,8 +173,8 @@ class InvoiceNode(InvoiceNodeBase):
                           data=data,
                           content_type=XMLI_MIMETYPE, )
         
-        if invoice.disable_notification != None:
-            request[DISABLE_NOTIFICATION_HEADER] = invoice.disable_notification 
+        if disable_notification:
+            request[DISABLE_NOTIFICATION_HEADER] = True 
             
         response = request.get_response()
         if response.status_code == 201:  #Created
