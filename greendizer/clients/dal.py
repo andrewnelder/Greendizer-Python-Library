@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import urllib
 from datetime import datetime, date
-from greendizer.clients.http import Request, Etag, Range, ApiException
+from greendizer.clients.http import Request, Etag, Range, ApiError
 from greendizer.clients.base import timestamp_to_datetime, datetime_to_timestamp
 
 RESPONSE_SIZE_LIMIT = 200
@@ -140,7 +140,7 @@ class Resource(object):
 
         try:
             self.load_info()
-        except(ApiException), e:
+        except(ApiError), e:
             if e.code == 404:
                 return False
             raise e
@@ -475,7 +475,7 @@ class Node(object):
         try:
             instance.load()
             return instance
-        except (ApiException), e:
+        except (ApiError), e:
             if e.code == 404:
                 return default
             raise e

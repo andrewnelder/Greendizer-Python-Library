@@ -43,13 +43,13 @@ def gzip_str(self, data):
     return bf.getvalue()
 
 
-class ApiException(Exception):
+class ApiError(Exception):
     '''
     Represents an API-related exception
     '''
     def __init__(self, response):
         '''
-        Initializes a new instance of the ApiException class.
+        Initializes a new instance of the ApiError class.
         @param response:Response
         '''
         self.__response = response
@@ -214,7 +214,7 @@ class Request(object):
         except(urllib2.HTTPError), e:
             instance = Response(self, e.code, e.read(), e.info())
             if e.code not in [201, 202, 204, 206, 304, 409, 416]:
-                raise ApiException(instance)
+                raise ApiError(instance)
 
             return instance
 
