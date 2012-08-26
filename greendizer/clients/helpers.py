@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from pyxmli import CURRENCIES
+try:
+    from pyxmli import CURRENCIES
+except ImportError:
+    CURRENCIES = []
 
 
 class Address(object):
@@ -51,7 +54,7 @@ class CurrencyMetrics(object):
         @param currency_code:str Currency code.
         @param data: dict Source object. 
         '''
-        if currency_code not in CURRENCIES:
+        if len(CURRENCIES) and currency_code not in CURRENCIES:
             raise ValueError('Unsupported currency ' + currency_code)
 
         if not data or not len(data):

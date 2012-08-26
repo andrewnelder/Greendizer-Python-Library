@@ -6,7 +6,10 @@ from greendizer.clients.helpers import CurrencyMetrics, Address
 from greendizer.clients.base import extract_id_from_uri, timestamp_to_datetime
 from greendizer.clients.dal import Resource, Node
 from greendizer.clients.http import Request
-from pyxmli import CURRENCIES
+try:
+    from pyxmli import CURRENCIES
+except ImportError:
+    CURRENCIES = []
 
 
 PAYMENT_METHOD_GREENDIZER = 'greendizer'
@@ -825,7 +828,7 @@ class Balance(Resource):
         @param currency:str Currency code.
         '''
         currency = currency.upper()
-        if currency not in CURRENCIES:
+        if len(CURRENCIES) and currency not in CURRENCIES:
             raise ValueError('Invalid currency code')
 
         self.__user = user
