@@ -3,16 +3,8 @@ import base64
 from greendizer.clients.resources.buyers import Buyer
 from greendizer.clients.resources.sellers import Seller
 
-DEBUG = False
-def switch_to_local():
-    from greendizer.clients import http
-    global DEBUG
-    DEBUG = True
-    http.API_ROOT = 'http://api.local.greendizer.com/'
-    http.DEBUG = True
 
-
-VERSION = "1.2.0"
+__all__ = ('SellerClient', 'BuyerClient')  
 
 
 class Client(object):

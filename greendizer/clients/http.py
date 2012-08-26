@@ -7,15 +7,15 @@ import urlparse
 from datetime import datetime, date
 from gzip import GzipFile
 from StringIO import StringIO
-from greendizer import  clients
+from greendizer.clients.config import DEBUG, VERSION
 from greendizer.clients.base import (timestamp_to_datetime, to_byte_string,
                                      datetime_to_timestamp,)
 
 
 try:
-    import json #2.6+
-except ImportError:
     import simplejson as json
+except ImportError:
+    import json
 
 
 COMPRESSION_DEFLATE = "deflate"
@@ -174,7 +174,7 @@ class Request(object):
         headers = self.__serialize_headers()
         headers.update({
             "Accept": "application/json",
-            "User-Agent": "Greendizer Python Library/" + clients.VERSION,
+            "User-Agent": "Greendizer Python Library/" + VERSION,
             "Accept-Encoding": "gzip, deflate",
             "Cache-Control": "no-cache"
         })
@@ -196,7 +196,7 @@ class Request(object):
                 data = to_byte_string(urllib.urlencode(data))
 
             #GZip compression
-            if not clients.DEBUG and USE_GZIP and use_gzip:
+            if not DEBUG and USE_GZIP and use_gzip:
                 headers["Content-Encoding"] = COMPRESSION_GZIP
                 data = gzip_str(to_byte_string(data))
 
