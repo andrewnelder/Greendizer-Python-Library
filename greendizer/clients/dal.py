@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import urllib
 from datetime import datetime, date
-from greendizer.http import Request, Etag, Range, ApiException
-from greendizer.base import timestamp_to_datetime, datetime_to_timestamp
+from greendizer.clients.http import Request, Etag, Range, ApiException
+from greendizer.clients.base import timestamp_to_datetime, datetime_to_timestamp
 
 RESPONSE_SIZE_LIMIT = 200
 
@@ -203,7 +203,7 @@ class Resource(object):
         '''
         self.__last_modified = etag.last_modified
         self.__id = etag.id
-        data.pop('etag')
+        data.pop('etag', None)
         return any([self._set_attribute(item, value)
                     for item, value in data.items()])
 

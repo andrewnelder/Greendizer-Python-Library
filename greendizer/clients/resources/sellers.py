@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import logging
-from greendizer.helpers import Address
-from greendizer.base import (extract_id_from_uri, size_in_bytes)
-from greendizer.http import Request
-from greendizer.dal import Node
-from greendizer.resources import (User, EmailBase, InvoiceBase,
+from greendizer.clients.helpers import Address
+from greendizer.clients.base import (extract_id_from_uri, size_in_bytes)
+from greendizer.clients.http import Request
+from greendizer.clients.dal import Node
+from greendizer.clients.resources import (User, EmailBase, InvoiceBase,
                                   InvoiceNodeBase, AnalyticsBase, DailyDigest,
                                   HourlyDigest, TimespanDigestNode)
 

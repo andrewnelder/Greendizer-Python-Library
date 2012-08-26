@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-from greendizer.base import extract_id_from_uri
-from greendizer.dal import Node
-from greendizer.resources import (User, Company, EmailBase,
+from greendizer.clients.base import extract_id_from_uri
+from greendizer.clients.dal import Node
+from greendizer.clients.resources import (User, Company, EmailBase,
                                   InvoiceBase, InvoiceNodeBase, AnalyticsBase,
                                   TimespanDigestNode, HourlyDigest, DailyDigest)
 

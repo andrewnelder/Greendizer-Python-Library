@@ -2,10 +2,10 @@
 import re
 import hashlib
 from datetime import date
-from greendizer.helpers import CurrencyMetrics, Address
-from greendizer.base import extract_id_from_uri, timestamp_to_datetime
-from greendizer.dal import Resource, Node
-from greendizer.http import Request
+from greendizer.clients.helpers import CurrencyMetrics, Address
+from greendizer.clients.base import extract_id_from_uri, timestamp_to_datetime
+from greendizer.clients.dal import Resource, Node
+from greendizer.clients.http import Request
 from pyxmli import CURRENCIES
 
 
