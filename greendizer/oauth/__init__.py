@@ -59,10 +59,9 @@ class OAuthClient(object):
             response = urllib2.urlopen(request)
             return AttributeDict(json.loads(response.read()))
         except(urllib2.URLError), error:
-            try:
+            if error.code < 500:
                 raise AccessTokenError(json.loads(error.read())['error'])
-            except:
-                raise Exception(error.read())
+            raise RuntimeError(error.read())
         
     def get_authorize_url(self, redirect_uri=None, scope=None):
         return (self.__authorize_uri + '?' +
