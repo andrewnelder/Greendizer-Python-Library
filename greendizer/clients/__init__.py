@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import base64
 from greendizer.clients.resources.buyers import Buyer
 from greendizer.clients.resources.sellers import Seller
 
@@ -27,6 +26,18 @@ class Client(object):
         self._password = password
         self._access_token = access_token
         self._generate_authorization_header()
+        
+    def __getattr__(self, attr):
+        if attr in ['oauth_token', 'access_token']:
+            return self._access_token
+        
+        return super(Client, self).__getattr__(attr)
+        
+    def __setattr__(self, attr, val):
+        if attr in ['oauth_token', 'access_token']:
+            self._access_token = val
+            self._generate_authorization_header()
+        return super(Client, self).__setattr__(attr, val)
 
     @property
     def email_address(self):
@@ -51,12 +62,10 @@ class Client(object):
         initialization.
         '''
         if self._email and self._password:
-            encoded = base64.encodestring("%s:%s" % (self._email,
-                                                     self._password))
-
+            encoded = ("%s:%s" % (self._email,self._password)).encode('base64')
             self.__authorization_header = "BASIC " + encoded.strip("\n")
         else:
-            self.__authorization_header = "BEARER " + self._access_token
+            self.__authorization_header = "BEARER " + (self._access_token or '')
 
     def sign_request(self, request):
         '''
