@@ -142,21 +142,29 @@ class InvoiceNode(InvoiceNodeBase):
         @param invoices:list List of invoices to send.
         @return: InvoiceReport
         '''
-        from pyxmli import Invoice as XMLiInvoice
+        from pyxmli import Invoice as XMLiInvoice, Address as XMLi_Address
         if not issubclass(invoice.__class__, XMLiInvoice):
-            raise ValueError('\'invoice\' is not an instance of ' /
-                             'greendizer.xmli.Invoice or one of its ' /
+            raise ValueError('\'invoice\' is not an instance of ' \
+                             'greendizer.xmli.Invoice or one of its ' \
                              'subclasses.')
         
         private_key, public_key = self.email.client.keys
         enable_signature = signature and private_key and public_key
         if enable_signature != signature:
-            logging.warn('Missing private and/or public key. Invoices ' /
+            logging.warn('Missing private and/or public key. Invoices ' \
                          'will not be signed.') 
-
+        
+        invoice.domain = invoice.domain or 'greendizer.com'
         invoice.seller.name = self.email.user.company.name
-        invoice.seller.email = self.email.id
-        invoice.seller.address = self.email.user.company.address
+        invoice.seller.identifier = self.email.id
+        address = self.email.user.company.address
+        invoice.seller.address = XMLi_Address(
+            street_address=address.street_address,
+            city=address.city,
+            zipcode=address.zipcode,
+            state=address.state,
+            country=address.country,
+        )
         invoice.mentions = (invoice.mentions or
                             self.email.user.company.legal_mentions)
             
