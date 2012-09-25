@@ -39,7 +39,7 @@ class Seller(User):
         Gets the URI of the seller.
         @return: str
         '''
-        return "sellers/me/"
+        return "sellers/" + self.id + '/'
 
     @property
     def emails(self):
