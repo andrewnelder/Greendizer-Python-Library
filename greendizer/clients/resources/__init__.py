@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import re
 import hashlib
+import httplib
 from datetime import date
+from greendizer.clients.http import API_ROOT, USER_AGENT
 from greendizer.clients.helpers import CurrencyMetrics, Address
 from greendizer.clients.base import extract_id_from_uri, timestamp_to_datetime
 from greendizer.clients.dal import Resource, Node
@@ -271,6 +273,10 @@ class EmailBase(Resource):
         return self.__user
 
 
+class PDFError(Exception):
+    pass
+
+
 class InvoiceBase(Resource):
     '''
     Represent an email address on Greendizer
@@ -283,10 +289,8 @@ class InvoiceBase(Resource):
         '''
         super(InvoiceBase, self).__init__(email.client, identifier)
         self.__email = email
-        self.__payments = PaymentNode(email.client,
-                                      self.uri + 'payments/',
-                                      Payment)
-
+        self.__payments = PaymentNode(self)
+    
     @property
     def email(self):
         '''
@@ -449,6 +453,21 @@ class InvoiceBase(Resource):
     read = property(__get_read, __set_read)
     flagged = property(__get_flagged, __set_flagged)
     paid = property(__get_flagged, __set_flagged)
+    
+    def get_pdf(self, locale='en'):
+        '''
+        Gets the URI of the PDF version of the invoice
+        @return: str
+        '''
+        http = httplib.HTTP(API_ROOT)
+        http.request('GET', self.uri)
+        http.putheader('Accept', 'application/pdf')
+        http.putheader('Accept-Language', locale)
+        http.putheader('User-Agent', USER_AGENT)
+        response = http.getresponse()
+        if response.status != 302:
+            raise PDFError
+        return response.headers['Location'] 
 
     @classmethod
     def from_uri(cls, user, uri):
@@ -458,14 +477,16 @@ class InvoiceBase(Resource):
         @param uri:str URI
         @return: InvoiceBase
         '''
-        match = re.compile('^' + user.uri +
+        if '/me/' in user.uri:
+            user.load_info()
+            
+        match = re.compile('/' + user.uri +
                            'emails\/(?P<email>.+)\/invoices' +
-                           '\/(?P<id>\d+)\/$',
-                           re.IGNORECASE).match(uri)
-
+                           '\/(?P<id>.+)\/$',
+                           re.LOCALE).search(uri)
         if not match:
             return
-
+        
         return cls(user.emails[match.groupdict()['email']],
                    match.groupdict()['id'])
 
