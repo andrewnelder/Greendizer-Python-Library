@@ -387,19 +387,19 @@ class InvoiceBase(Resource):
         '''
         return self._get_attribute("secretKey")
 
-    def __get_location(self):
+    def __get_archived(self):
         '''
-        Gets a value indicating the location of the invoice.
-        @return: int
+        Gets a value indicating whether the invoice has been archived or not.
+        @return: bool
         '''
-        return self._get_attribute("location")
+        return self._get_attribute("archived")
 
-    def __set_location(self, value):
+    def __set_archived(self, value):
         '''
-        Sets a value indicating the location of the invoice.
-        @param value:int
+        Sets a value indicating to mark the invoice as archived or not.
+        @param value:bool
         '''
-        self._register_update("location", value)
+        self._register_update("archived", value)
 
     def __get_read(self):
         '''
@@ -443,7 +443,7 @@ class InvoiceBase(Resource):
         '''
         self._register_update("paid", value)
 
-    location = property(__get_location, __set_location)
+    archived = property(__get_archived, __set_archived)
     read = property(__get_read, __set_read)
     flagged = property(__get_flagged, __set_flagged)
     paid = property(__get_flagged, __set_flagged)
