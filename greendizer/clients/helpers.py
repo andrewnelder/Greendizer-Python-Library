@@ -27,7 +27,13 @@ class Address(object):
         @param field:str Field name.
         @return: str
         '''
-        return self.__address_dict[field]
+        #FIXME: Temporary workaround
+        if field == 'street_address':
+            field = 'street'
+        try:
+            return self.__address_dict[field]
+        except KeyError:
+            raise AttributeError, field
 
     def __setattribute__(self, field, value):
         '''
@@ -38,7 +44,7 @@ class Address(object):
         if not self.__mutable:
             raise Exception("Address is not mutable.")
 
-        if field not in ["number", "street", "city", "zipcode", "state",
+        if field not in ["street_address", "city", "zipcode", "state",
                          "country"]:
             raise AttributeError("Address has no such attribute.")
 

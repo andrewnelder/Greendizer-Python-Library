@@ -376,6 +376,19 @@ class Collection(object):
         Loads the headers of the collection.
         '''
         self.populate(0, 1, head=True)
+    
+    def retrieve_all(self, fields=None):
+        '''
+        Populates the collection with all the resources available on the
+        server.
+        @param fields:str Comma-separated list of fields to request or exclude.
+        '''
+        results = {}
+        for n in xrange(0, self.count, RESPONSE_SIZE_LIMIT):
+            self.populate(offset=n, limit=RESPONSE_SIZE_LIMIT, fields=fields)
+            results.update(self.__resources)
+        self.__resources = results    
+        self.__list = results.values()
 
     def populate(self, offset=0, limit=200, head=False, fields=None):
         '''

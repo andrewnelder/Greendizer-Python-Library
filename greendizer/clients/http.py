@@ -4,6 +4,7 @@ import urllib2
 import re
 import zlib
 import urlparse
+import logging
 from datetime import datetime, date
 from gzip import GzipFile
 from StringIO import StringIO
@@ -21,6 +22,7 @@ except ImportError:
 COMPRESSION_DEFLATE = "deflate"
 COMPRESSION_GZIP = "gzip"
 API_ROOT = "https://api.greendizer.com/"
+USER_AGENT = "Greendizer Python Library/" + VERSION
 USE_GZIP = True
 HTTP_METHODS_WITH_DATA = ['post', 'put', 'patch']
 HTTP_METHODS = ["head", "get", "delete", "options"] + HTTP_METHODS_WITH_DATA
@@ -173,7 +175,7 @@ class Request(object):
         headers = self.__serialize_headers()
         headers.update({
             "Accept": "application/json",
-            "User-Agent": "Greendizer Python Library/" + VERSION,
+            "User-Agent": USER_AGENT,
             "Accept-Encoding": "gzip, deflate",
             "Cache-Control": "no-cache"
         })
@@ -311,7 +313,7 @@ class Response(object):
             return json.loads(self.__data)
         except:
             raise ValueError('Unable to parse the response received:\n' +
-                             self.__data)
+                             (self.__data or ''))
 
 
 class Etag(object):

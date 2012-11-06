@@ -38,7 +38,7 @@ class Seller(User):
         Gets the URI of the seller.
         @return: str
         '''
-        return "sellers/me/"
+        return "sellers/" + self.id + '/'
 
     @property
     def emails(self):
@@ -145,7 +145,6 @@ class InvoiceNode(InvoiceNodeBase):
         if not issubclass(invoice.__class__, XMLiInvoice):
             raise ValueError('\'invoice\' is not an instance of ' \
                              'pyxmli.Invoice or one of its subclasses.')
-        
         private_key, public_key = self.email.client.keys
         enable_signature = signature and private_key and public_key
         if enable_signature != signature:
@@ -172,8 +171,6 @@ class InvoiceNode(InvoiceNodeBase):
             
         data = (invoice.to_signed_str(private_key, public_key) 
                 if enable_signature else invoice.to_string())
-            
-        print data
             
         if size_in_bytes(data) > MAX_INVOICE_CONTENT_LENGTH:
             raise Exception('An invoice cannot be more than %dkb.' %
