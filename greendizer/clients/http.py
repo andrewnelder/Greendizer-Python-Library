@@ -368,7 +368,7 @@ class Etag(object):
         if not raw or len(raw) == 0:
             raise ValueError('Invalid ETag value \'%s\'.' % raw)
 
-        timestamp, identifier = raw.split("-")
+        timestamp, identifier = raw.split('-', 1)
         return cls(timestamp_to_datetime(timestamp), identifier)
 
 
