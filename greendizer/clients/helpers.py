@@ -16,6 +16,10 @@ class Address(object):
         '''
         self.__address_dict = address_dict
         self.__mutable = mutable
+        
+    @property
+    def street_address(self):    
+        return ('%s %s' % (self.number, self.street)).strip(' ')
 
     def __getattr__(self, field):
         '''
@@ -23,10 +27,7 @@ class Address(object):
         @param field:str Field name.
         @return: str
         '''
-        try:
-            return self.__address_dict[field]
-        except KeyError:
-            raise AttributeError, field
+        return self.__address_dict[field]
 
     def __setattribute__(self, field, value):
         '''
