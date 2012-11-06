@@ -283,9 +283,7 @@ class InvoiceBase(Resource):
         '''
         super(InvoiceBase, self).__init__(email.client, identifier)
         self.__email = email
-        self.__payments = PaymentNode(email.client,
-                                      self.uri + 'payments/',
-                                      Payment)
+        self.__payments = PaymentNode(self)
 
     @property
     def email(self):
