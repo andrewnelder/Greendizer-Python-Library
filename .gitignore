@@ -3,5 +3,6 @@
 .project
 *.pyc
 tests/
+vanillaenv/
 .DS_Store
 greendizerc

@@ -9,9 +9,9 @@ if version < 2.5:
 
 
 try:
-    from distutils.core import setup
-except ImportError:
     from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 
 '''
@@ -21,17 +21,17 @@ compatibility with Python 2.5."
 
 (http://pypi.python.org/pypi/simplejson/)
 '''
-install_requires = ['pyxmli >= 2.0',]
+install_requires = ['pyxmli >= 2.0.0',]
 if version < 2.6:
     install_requires.append('simplejson >= 2.6')
     
     
 setup(
     name                = 'greendizer',
+    packages            = ['greendizer', 'greendizer.clients', 'greendizer.oauth'],
     version             = open('VERSION').read(),
     author              = u'Greendizer',
     author_email        = 'support@greendizer.com',
-    namespace_packages  = ['greendizer'],
     package_data        = {'greendizer' : ['../VERSION']},
     install_requires    = install_requires,
     url                 = 'https://github.com/Greendizer/Greendizer-Python-Library',
