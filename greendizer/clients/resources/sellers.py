@@ -9,7 +9,8 @@ from greendizer.clients.resources import (User, EmailBase, InvoiceBase,
                                   HourlyDigest, TimespanDigestNode)
 
 
-XMLI_MIMETYPE = 'application/xml'
+XMLI_MIMETYPE = 'application/xmli+xml'
+DISABLE_NOTIFICATION_HEADER = 'X-GD-DISABLE-NOTIFICATION'
 MAX_INVOICE_CONTENT_LENGTH = 5*1024  # 5kb
 
 
@@ -135,7 +136,7 @@ class InvoiceNode(InvoiceNodeBase):
 
         return collection[0]
     
-    def send(self, invoice, signature=True):
+    def send(self, invoice, signature=True, disable_notification=False):
         '''
         Sends an invoice
         @param invoices:list List of invoices to send.
@@ -143,37 +144,24 @@ class InvoiceNode(InvoiceNodeBase):
         '''
         from pyxmli import Invoice as XMLiInvoice
         if not issubclass(invoice.__class__, XMLiInvoice):
-            raise ValueError('\'invoice\' is not an instance of ' \
-                             'pyxmli.Invoice or one of its subclasses.')
+            raise ValueError('\'invoice\' is not an instance of ' /
+                             'greendizer.xmli.Invoice or one of its ' /
+                             'subclasses.')
         
         private_key, public_key = self.email.client.keys
         enable_signature = signature and private_key and public_key
         if enable_signature != signature:
-            logging.warn('Missing private and/or public key(s). Invoices ' \
+            logging.warn('Missing private and/or public key. Invoices ' /
                          'will not be signed.') 
-        
-        '''
-        Filling the invoice with information about the seller.
-        '''        
-        if not invoice.identifier:
-            import uuid
-            invoice.identifier = str(uuid.uuid1())
-        
-        invoice.seller.identifier = self.email.id
+
         invoice.seller.name = self.email.user.company.name
-        address = self.email.user.company.address
-        invoice.seller.address.street_address = address.street_address
-        invoice.seller.address.city = address.city
-        invoice.seller.address.zipcode = address.zipcode
-        invoice.seller.address.state = address.state
-        invoice.seller.address.country = address.country
+        invoice.seller.email = self.email.id
+        invoice.seller.address = self.email.user.company.address
         invoice.mentions = (invoice.mentions or
                             self.email.user.company.legal_mentions)
             
         data = (invoice.to_signed_str(private_key, public_key) 
                 if enable_signature else invoice.to_string())
-            
-        print data
             
         if size_in_bytes(data) > MAX_INVOICE_CONTENT_LENGTH:
             raise Exception('An invoice cannot be more than %dkb.' %
@@ -185,10 +173,14 @@ class InvoiceNode(InvoiceNodeBase):
                           data=data,
                           content_type=XMLI_MIMETYPE, )
         
+        if disable_notification:
+            request[DISABLE_NOTIFICATION_HEADER] = True 
+            
         response = request.get_response()
-        #FIX: Bug in the API. Should only return 201.
-        if response.status_code in [200, 201]:
-            return self[response.data["id"]]
+        if response.status_code == 201:  #Created
+            new_invoice = self[extract_id_from_uri(response["Location"])]
+            new_invoice.sync(response.data, response["Etag"])
+            return new_invoice
 
 
 class Invoice(InvoiceBase):
