@@ -21,23 +21,20 @@ compatibility with Python 2.5."
 
 (http://pypi.python.org/pypi/simplejson/)
 '''
-install_requires = ['pyxmli >= 0',]
+install_requires = ['pyxmli >= 2.0',]
 if version < 2.6:
     install_requires.append('simplejson >= 2.6')
     
     
 setup(
     name                = 'greendizer',
-    packages            = ['greendizer'],
     version             = open('VERSION').read(),
     author              = u'Greendizer',
     author_email        = 'support@greendizer.com',
     namespace_packages  = ['greendizer'],
     package_data        = {'greendizer' : ['../VERSION']},
     install_requires    = install_requires,
-    url                 = 'https://github.com/Greendizer/' /
-                            'Greendizer-Python-Library',
+    url                 = 'https://github.com/Greendizer/Greendizer-Python-Library',
     license             = open('LICENCE').read(),
-    description         = 'Create XMLi 2.0 invoices in Python.',
-    test_suite          = 'tests'
+    description         = 'A Python wrapper of the Greendizer invoicing API.',
 )

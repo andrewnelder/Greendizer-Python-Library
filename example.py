@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
 from datetime import datetime, date, timedelta
 from pyxmli import (Invoice, Group, Line, Tax, Discount, Address,
                     DeliveryMethod, Payment, INVOICE_PAID, RATE_TYPE_FIXED,
@@ -72,24 +71,12 @@ for line in group.lines:
     
 invoice.payments.append(Payment(amount=invoice.total,))
 
-
 invoice.deliveries.append(DeliveryMethod(method=DELIVERY_METHOD_EMAIL))
 
 
-#Sign the invoice using RSA encryption keys ('ssh-keygen -t rsa -b 1024')
-#keys_dir = os.path.join(os.path.dirname(__file__), 'tests')
-#signed = invoice.to_signed_str(open(os.path.join(keys_dir, 'id_rsa'), 'rb'), 
-#                               open(os.path.join(keys_dir, 'id_rsa.pub'), 'rb'))
-
-from greendizer.clients import config
-from greendizer.clients import SellerClient, ApiError
-
-config.switch_to_local(endpoint='http://api.local.greendizer.com/')
-
+from greendizer.clients import SellerClient
 seller = SellerClient(email="jimi.hendrix@greendizer.net",
                       password="password").seller
 
-try:
-    resource = seller.emails['jimi.hendrix@greendizer.net'].invoices.send(invoice)
-except ApiError, e:
-    print e
+sent_invoice = seller.emails['jimi.hendrix@greendizer.net'].invoices.send(invoice)
+print sent_invoice.total
