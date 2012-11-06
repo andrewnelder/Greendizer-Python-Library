@@ -62,7 +62,7 @@ def extract_id_from_uri(s):
     @param s:str URI
     @return: str
     '''
-    return [ item for item in s.split("/") if not is_empty_or_none(item) ][-1]
+    return [ item for item in s.split("/") if item ][-1]
 
 
 def size_in_bytes(data):
