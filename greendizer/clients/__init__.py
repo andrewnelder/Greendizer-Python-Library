@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import base64
+from greendizer.clients.http import ApiError
 from greendizer.clients.resources.buyers import Buyer
 from greendizer.clients.resources.sellers import Seller
 
