@@ -1,8 +1,8 @@
 Welcome to the official Python helper library for the Greendizer API.
 
 #About Greendizer
-Greendizer is a set of APIs to exchange and query invoices.
-Its helps developers add cloud-based invoicing capabilities to their systems, or simply build apps with realtime data from the invoices exchanged on the platform.
+Greendizer is a new kind of invoicing system.
+It turns the invoices sent with it to an extremely rich source of data for business intelligence and process automation.
 
 Check out [the Greendizer website](https://www.greendizer.com/) for more information.
 
