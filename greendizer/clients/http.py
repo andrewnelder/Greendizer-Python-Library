@@ -24,8 +24,7 @@ API_ROOT = "https://api.greendizer.com/"
 USE_GZIP = True
 HTTP_METHODS_WITH_DATA = ['post', 'put', 'patch']
 HTTP_METHODS = ["head", "get", "delete", "options"] + HTTP_METHODS_WITH_DATA
-CONTENT_TYPES = ["application/xmli+xml",
-                 "application/xml",
+CONTENT_TYPES = ["application/xml",
                  "application/x-www-form-urlencoded"]
 HTTP_POST_ONLY = False
 
