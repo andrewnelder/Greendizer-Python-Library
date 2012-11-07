@@ -13,4 +13,4 @@ def switch_to_local(endpoint='http://api.local.greendizer.com/'):
     http.DEBUG = True
 
 
-VERSION = "2.0"
+VERSION = "2.0.4"
