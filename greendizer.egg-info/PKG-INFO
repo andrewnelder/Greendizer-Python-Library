@@ -1,6 +1,6 @@
 Metadata-Version: 1.0
 Name: greendizer
-Version: 2.0.3
+Version: 2.0.4
 Summary: A Python wrapper of the Greendizer invoicing API.
 Home-page: https://github.com/Greendizer/Greendizer-Python-Library
 Author: Greendizer
