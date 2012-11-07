@@ -31,7 +31,7 @@ CONTENT_TYPES = ["application/xml",
 HTTP_POST_ONLY = False
 
 
-def gzip_str(self, data):
+def gzip_str(data):
     '''
     Gzips a string to the highest compression level.
     @param data:str
