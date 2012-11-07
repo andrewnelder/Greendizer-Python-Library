@@ -19,9 +19,8 @@ invoice = Invoice(name="Online shopping on Guitar Heroes Store",
 
 
 #Billing contact and address
-invoice.buyer.identifier = '12345'
+invoice.buyer.identifier = '12345' # or stevie@ray-vaughan.com
 invoice.buyer.name = "Stevie Ray Vaughan"
-invoice.buyer.email = "stevie@ray-vaughan.com"
 invoice.buyer.address = Address(street_address="E Riverside Dr",
                                 city="Austin",
                                 state='TX',
