@@ -14,21 +14,19 @@ except ImportError:
     from distutils.core import setup
 
 
-'''
-"simplejson is the externally maintained development version of the json
-library included with Python 2.6 and Python 3.0, but maintains backwards 
-compatibility with Python 2.5."
-
-(http://pypi.python.org/pypi/simplejson/)
-'''
 install_requires = ['pyxmli >= 2.0.0',]
 if version < 2.6:
     install_requires.append('simplejson >= 2.6')
-    
-    
+
+
 setup(
     name                = 'greendizer',
-    packages            = ['greendizer', 'greendizer.clients', 'greendizer.oauth'],
+    packages            = [
+                            'greendizer',
+                            'greendizer.clients',
+                            'greendizer.clients.resources',
+                            'greendizer.oauth',
+                          ],
     version             = open('VERSION').read(),
     author              = u'Greendizer',
     author_email        = 'support@greendizer.com',
